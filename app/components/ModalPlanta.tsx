@@ -27,7 +27,18 @@ export default function ModalPlanta({ planta, onGuardar, onCerrar }: ModalPlanta
     onGuardar(form);
   };
 
-  return (
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setForm({...form, foto: reader.result as string});
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+ return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 animate-fade-in">
       <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
         {/* Header */}
@@ -105,18 +116,54 @@ export default function ModalPlanta({ planta, onGuardar, onCerrar }: ModalPlanta
           {/* Foto */}
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              URL de la foto
+              Foto de la planta
             </label>
-            <input
-              type="url"
-              value={form.foto}
-              onChange={(e) => setForm({...form, foto: e.target.value})}
-              className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-white focus:ring-2 focus:ring-green-500 outline-none"
-              placeholder="https://ejemplo.com/foto.jpg"
-            />
-            <p className="text-xs text-gray-500 mt-1">
-              Puedes usar imágenes de Unsplash: https://unsplash.com/s/photos/plant
-            </p>
+            
+            {/* Preview de la imagen */}
+            {form.foto && (
+              <div className="mb-3 relative">
+                <img 
+                  src={form.foto} 
+                  alt="Preview" 
+                  className="w-full h-48 object-cover rounded-lg"
+                />
+                <button
+                  type="button"
+                  onClick={() => setForm({...form, foto: ''})}
+                  className="absolute top-2 right-2 bg-red-500 text-white p-2 rounded-full hover:bg-red-600"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            )}
+
+            {/* Botón para subir imagen */}
+            <div className="flex gap-2">
+              <label className="flex-1 cursor-pointer">
+                <div className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-4 text-center hover:border-green-500 transition-colors">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleImageUpload}
+                    className="hidden"
+                  />
+                  <div className="text-gray-600 dark:text-gray-400">
+                    📷 Subir foto desde dispositivo
+                  </div>
+                </div>
+              </label>
+            </div>
+
+            {/* Input de URL alternativo */}
+            <div className="mt-2">
+              <input
+                type="url"
+                value={form.foto.startsWith('data:') ? '' : form.foto}
+                onChange={(e) => setForm({...form, foto: e.target.value})}
+                className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-white focus:ring-2 focus:ring-green-500 outline-none"
+                placeholder="O pega una URL de imagen"
+              />
+            </div>
           </div>
 
           {/* Notas */}
@@ -138,12 +185,14 @@ export default function ModalPlanta({ planta, onGuardar, onCerrar }: ModalPlanta
             <button
               onClick={onCerrar}
               className="flex-1 px-6 py-3 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors font-medium"
+              type="button"
             >
               Cancelar
             </button>
             <button
               onClick={handleSubmit}
               className="flex-1 px-6 py-3 rounded-lg bg-green-600 hover:bg-green-700 text-white font-medium transition-all transform hover:scale-105 shadow-lg shadow-green-600/30"
+              type="button"
             >
               {planta ? 'Guardar Cambios' : 'Agregar Planta'}
             </button>

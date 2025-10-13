@@ -38,7 +38,7 @@ export default function CardPlanta({
           </div>
         )}
         
-        {/* Badge de riego - MEJORADO PARA MÓVIL */}
+        {/* Badge de riego */}
         <div className={`absolute top-2 right-2 px-2 py-1 rounded-full text-xs font-medium backdrop-blur-sm ${estadoRiego.bg} ${estadoRiego.color} flex items-center gap-1`}>
           <Droplet className="w-3 h-3" />
           <span className="whitespace-nowrap">{estadoRiego.texto}</span>
