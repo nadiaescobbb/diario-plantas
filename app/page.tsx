@@ -129,6 +129,13 @@ export default function DiarioPlantas() {
               <span className="hidden sm:inline">Calendario</span>
             </button>
             <button
+              onClick={() => setMostrarLanding(true)}
+              className="text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 px-4 py-2 rounded-lg transition-all"
+              title="Ver página de inicio"
+            >
+              ℹ️ Acerca de
+            </button>
+            <button
               onClick={() => setDarkMode(!darkMode)}
               className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
             >
