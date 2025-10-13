@@ -38,10 +38,10 @@ export default function CardPlanta({
           </div>
         )}
         
-        {/* Badge de riego */}
-        <div className={`absolute top-3 right-3 px-3 py-1 rounded-full text-sm font-medium backdrop-blur-sm ${estadoRiego.bg} ${estadoRiego.color}`}>
-          <Droplet className="w-4 h-4 inline mr-1" />
-          {estadoRiego.texto}
+        {/* Badge de riego - MEJORADO PARA MÓVIL */}
+        <div className={`absolute top-2 right-2 px-2 py-1 rounded-full text-xs font-medium backdrop-blur-sm ${estadoRiego.bg} ${estadoRiego.color} flex items-center gap-1`}>
+          <Droplet className="w-3 h-3" />
+          <span className="whitespace-nowrap">{estadoRiego.texto}</span>
         </div>
       </div>
 
@@ -70,21 +70,33 @@ export default function CardPlanta({
         {/* Acciones */}
         <div className="flex gap-2">
           <button
-            onClick={() => onRegar(planta.id)}
+            onClick={(e) => {
+              e.stopPropagation();
+              onRegar(planta.id);
+            }}
             className="flex-1 bg-blue-500 hover:bg-blue-600 text-white py-2 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-1"
+            type="button"
           >
             <Droplet className="w-4 h-4" />
             Regar
           </button>
           <button
-            onClick={() => onEditar(planta)}
+            onClick={(e) => {
+              e.stopPropagation();
+              onEditar(planta);
+            }}
             className="p-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-600 dark:text-gray-300 rounded-lg transition-colors"
+            type="button"
           >
             <Edit2 className="w-4 h-4" />
           </button>
           <button
-            onClick={() => onEliminar(planta.id)}
+            onClick={(e) => {
+              e.stopPropagation();
+              onEliminar(planta.id);
+            }}
             className="p-2 bg-red-100 dark:bg-red-900/30 hover:bg-red-200 dark:hover:bg-red-900/50 text-red-600 dark:text-red-400 rounded-lg transition-colors"
+            type="button"
           >
             <Trash2 className="w-4 h-4" />
           </button>
