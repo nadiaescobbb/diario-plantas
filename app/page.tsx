@@ -130,10 +130,11 @@ export default function DiarioPlantas() {
             </button>
             <button
               onClick={() => setMostrarLanding(true)}
-              className="text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 px-4 py-2 rounded-lg transition-all"
+              className="px-4 py-2 rounded-lg transition-all border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
               title="Ver página de inicio"
             >
-              ℹ️ Acerca de
+              <span className="text-lg">ℹ️</span>
+              <span className="hidden sm:inline">Acerca de</span>
             </button>
             <button
               onClick={() => setDarkMode(!darkMode)}
