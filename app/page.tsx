@@ -97,65 +97,88 @@ export default function DiarioPlantas() {
       darkMode ? 'dark bg-gray-900' : 'bg-gradient-to-br from-green-50 via-emerald-50 to-teal-50'
     }`}>
       {/* NAVBAR */}
-      <nav className="bg-white dark:bg-gray-800 shadow-sm border-b border-green-100 dark:border-gray-700 sticky top-0 z-40 backdrop-blur-sm bg-opacity-90 dark:bg-opacity-90">
-        <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between flex-wrap gap-4">
-          <div className="flex items-center gap-3">
-            <Sprout className="w-8 h-8 text-green-600 dark:text-green-400" />
-            <h1 className="text-2xl font-bold text-gray-800 dark:text-white">
-              {CONFIG.appName}
-            </h1>
-          </div>
-          
-          <div className="flex items-center gap-4 flex-wrap">
-            <button
-              onClick={() => setVista('galeria')}
-              className={`px-4 py-2 rounded-lg transition-all ${
-                vista === 'galeria' 
-                  ? 'bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300' 
-                  : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
-              }`}
-            >
-              Galería
-            </button>
-            <button
-              onClick={() => setVista('calendario')}
-              className={`px-4 py-2 rounded-lg transition-all flex items-center gap-2 ${
-                vista === 'calendario' 
-                  ? 'bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300' 
-                  : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
-              }`}
-            >
-              <Calendar className="w-5 h-5" />
-              <span className="hidden sm:inline">Calendario</span>
-            </button>
-            <button
-              onClick={() => setMostrarLanding(true)}
-              className="px-4 py-2 rounded-lg transition-all border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
-              title="Ver página de inicio"
-            >
-              <span className="text-lg">ℹ️</span>
-              <span className="hidden sm:inline">Acerca de</span>
-            </button>
-            <button
-              onClick={() => setDarkMode(!darkMode)}
-              className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-            >
-              {darkMode ? (
-                <Sun className="w-5 h-5 text-yellow-400" />
-              ) : (
-                <Moon className="w-5 h-5 text-gray-600" />
-              )}
-            </button>
-            <button
-              onClick={() => {
-                setPlantaEditar(null);
-                setModalAbierto(true);
-              }}
-              className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-all transform hover:scale-105 shadow-lg shadow-green-600/30"
-            >
-              <Plus className="w-5 h-5" />
-              <span className="hidden sm:inline">Nueva Planta</span>
-            </button>
+      <nav className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl border-b border-gray-200/50 dark:border-gray-800/50 sticky top-0 z-50 shadow-sm">
+        <div className="max-w-7xl mx-auto px-4 py-4">
+          <div className="flex items-center justify-between flex-wrap gap-4">
+            {/* Logo */}
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-gradient-to-br from-green-500 to-emerald-500 rounded-xl flex items-center justify-center shadow-lg shadow-green-500/30">
+                <Sprout className="w-6 h-6 text-white" />
+              </div>
+              <div>
+                <h1 className="text-xl font-bold text-gray-900 dark:text-white">
+                  {CONFIG.appName}
+                </h1>
+                <p className="text-xs text-gray-500 dark:text-gray-400">Tu jardín digital</p>
+              </div>
+            </div>
+            
+            {/* Navigation */}
+            <div className="flex items-center gap-2 flex-wrap">
+              <button
+                onClick={() => setVista('galeria')}
+                className={`px-4 py-2.5 rounded-xl font-medium transition-all duration-200 ${
+                  vista === 'galeria' 
+                    ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 shadow-sm' 
+                    : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800/50'
+                }`}
+              >
+                <span className="flex items-center gap-2">
+                  🏡 <span className="hidden sm:inline">Galería</span>
+                </span>
+              </button>
+              
+              <button
+                onClick={() => setVista('calendario')}
+                className={`px-4 py-2.5 rounded-xl font-medium transition-all duration-200 ${
+                  vista === 'calendario' 
+                    ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 shadow-sm' 
+                    : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800/50'
+                }`}
+              >
+                <span className="flex items-center gap-2">
+                  <Calendar className="w-4 h-4" />
+                  <span className="hidden sm:inline">Calendario</span>
+                </span>
+              </button>
+
+              <button
+                onClick={() => setMostrarLanding(true)}
+                className="px-4 py-2.5 rounded-xl font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800/50 transition-all duration-200"
+                title="Ver página de inicio"
+              >
+                <span className="flex items-center gap-2">
+                  ℹ️ <span className="hidden sm:inline">Info</span>
+                </span>
+              </button>
+
+              <div className="w-px h-8 bg-gray-300 dark:bg-gray-700 mx-1"></div>
+              
+              <button
+                onClick={() => setDarkMode(!darkMode)}
+                className="p-2.5 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800/50 transition-all duration-200"
+                title={darkMode ? 'Modo claro' : 'Modo oscuro'}
+              >
+                {darkMode ? (
+                  <Sun className="w-5 h-5 text-yellow-500" />
+                ) : (
+                  <Moon className="w-5 h-5 text-gray-600" />
+                )}
+              </button>
+              
+              <button
+                onClick={() => {
+                  setPlantaEditar(null);
+                  setModalAbierto(true);
+                }}
+                className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white px-5 py-2.5 rounded-xl font-medium transition-all duration-200 transform hover:scale-105 shadow-lg shadow-green-500/30 hover:shadow-green-500/50"
+              >
+                <span className="flex items-center gap-2">
+                  <Plus className="w-5 h-5" />
+                  <span className="hidden sm:inline">Nueva Planta</span>
+                </span>
+              </button>
+            </div>
           </div>
         </div>
       </nav>
