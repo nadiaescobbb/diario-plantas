@@ -1,258 +1,272 @@
-'use client';
-
 import React, { useState, useEffect } from 'react';
-import { Calendar, Plus, Edit2, Trash2, Sun, Moon, Droplet, Sprout, X, Search } from 'lucide-react';
-import Landing from './components/Landing';
-import CardPlanta from './components/CardPlanta';
-import ModalPlanta from './components/ModalPlanta';
-import VistaCalendario from './components/VistaCalendario';
-import { Planta, Vista, TIPOS_PLANTA, CONFIG } from './types';
+import { 
+  LayoutGrid, Sprout, Calendar, BookOpen, Settings, 
+  HelpCircle, Plus, Search, Sun, Moon, User, LogOut,
+  Bell, Home
+} from 'lucide-react';
 
-export default function DiarioPlantas() {
+// Tipos
+type Vista = 'dashboard' | 'mis-plantas' | 'calendario' | 'base-datos' | 'configuracion';
+
+export default function DiariePlantasPro() {
+  const [vistaActual, setVistaActual] = useState<Vista>('dashboard');
   const [darkMode, setDarkMode] = useState(false);
-  const [plantas, setPlantas] = useState<Planta[]>([]);
-  const [vista, setVista] = useState<Vista>('galeria');
-  const [modalAbierto, setModalAbierto] = useState(false);
-  const [plantaEditar, setPlantaEditar] = useState<Planta | null>(null);
-  const [busqueda, setBusqueda] = useState('');
-  const [filtroTipo, setFiltroTipo] = useState('Todos');
-  const [mostrarLanding, setMostrarLanding] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(true);
 
-  // Cargar datos al inicio
   useEffect(() => {
-    const plantasGuardadas = localStorage.getItem('plantas');
-    const modoOscuro = localStorage.getItem('darkMode') === 'true';
-    const yaVistoLanding = localStorage.getItem('visitado') === 'true';
-    
-    if (plantasGuardadas) setPlantas(JSON.parse(plantasGuardadas));
-    setDarkMode(modoOscuro);
-    setMostrarLanding(!yaVistoLanding);
+    const modoGuardado = localStorage.getItem('darkMode') === 'true';
+    setDarkMode(modoGuardado);
+    if (modoGuardado) {
+      document.documentElement.classList.add('dark');
+    }
   }, []);
 
-  // Guardar plantas
-  useEffect(() => {
-    if (plantas.length >= 0) {
-      localStorage.setItem('plantas', JSON.stringify(plantas));
-    }
-  }, [plantas]);
-
-  // Cambiar modo oscuro
-  useEffect(() => {
-    localStorage.setItem('darkMode', String(darkMode));
-    if (darkMode) {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
-  }, [darkMode]);
-
-  const agregarPlanta = (planta: Omit<Planta, 'id'>) => {
-    if (plantaEditar) {
-      setPlantas(plantas.map(p => 
-        p.id === plantaEditar.id ? { ...planta, id: plantaEditar.id } : p
-      ));
-    } else {
-      setPlantas([...plantas, { ...planta, id: Date.now() }]);
-    }
-    setModalAbierto(false);
-    setPlantaEditar(null);
+  const toggleDarkMode = () => {
+    setDarkMode(!darkMode);
+    localStorage.setItem('darkMode', String(!darkMode));
+    document.documentElement.classList.toggle('dark');
   };
-
-  const eliminarPlanta = (id: number) => {
-    if (window.confirm('¿Seguro que deseas eliminar esta planta?')) {
-      setPlantas(plantas.filter(p => p.id !== id));
-    }
-  };
-
-  const editarPlanta = (planta: Planta) => {
-    setPlantaEditar(planta);
-    setModalAbierto(true);
-  };
-
-  const marcarRiego = (id: number) => {
-    setPlantas(plantas.map(p => 
-      p.id === id ? { ...p, ultimoRiego: new Date().toISOString() } : p
-    ));
-  };
-
-  const plantasFiltradas = plantas.filter(p => {
-    const matchBusqueda = p.nombre.toLowerCase().includes(busqueda.toLowerCase());
-    const matchTipo = filtroTipo === 'Todos' || p.tipo === filtroTipo;
-    return matchBusqueda && matchTipo;
-  });
-
-  if (mostrarLanding) {
-    return (
-      <Landing 
-        onEntrar={() => {
-          setMostrarLanding(false);
-          localStorage.setItem('visitado', 'true');
-        }} 
-      />
-    );
-  }
 
   return (
-    <div className={`min-h-screen transition-colors duration-300 ${
-      darkMode ? 'dark bg-gray-900' : 'bg-gradient-to-br from-green-50 via-emerald-50 to-teal-50'
-    }`}>
-      {/* NAVBAR */}
-      <nav className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl border-b border-gray-200/50 dark:border-gray-800/50 sticky top-0 z-50 shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 py-4">
-          <div className="flex items-center justify-between flex-wrap gap-4">
-            {/* Logo */}
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-gradient-to-br from-green-500 to-emerald-500 rounded-xl flex items-center justify-center shadow-lg shadow-green-500/30">
-                <Sprout className="w-6 h-6 text-white" />
-              </div>
+    <div className="flex h-screen bg-gray-50 dark:bg-gray-900 overflow-hidden">
+      {/* SIDEBAR */}
+      <aside className={`${sidebarOpen ? 'w-64' : 'w-20'} bg-[#2d5016] dark:bg-gray-800 text-white transition-all duration-300 flex flex-col`}>
+        {/* Logo */}
+        <div className="p-6 border-b border-white/10">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center flex-shrink-0">
+              <Sprout className="w-6 h-6 text-[#2d5016]" />
+            </div>
+            {sidebarOpen && (
               <div>
-                <h1 className="text-xl font-bold text-gray-900 dark:text-white">
-                  {CONFIG.appName}
-                </h1>
-                <p className="text-xs text-gray-500 dark:text-gray-400">Tu jardín digital</p>
+                <h1 className="font-bold text-lg">Diario de Plantas</h1>
+                <p className="text-xs text-white/60">v2.0 Pro</p>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Navigation */}
+        <nav className="flex-1 p-4 space-y-2">
+          <NavItem
+            icon={<Home className="w-5 h-5" />}
+            label="Dashboard"
+            active={vistaActual === 'dashboard'}
+            onClick={() => setVistaActual('dashboard')}
+            collapsed={!sidebarOpen}
+          />
+          <NavItem
+            icon={<Sprout className="w-5 h-5" />}
+            label="My Plants"
+            active={vistaActual === 'mis-plantas'}
+            onClick={() => setVistaActual('mis-plantas')}
+            collapsed={!sidebarOpen}
+          />
+          <NavItem
+            icon={<Calendar className="w-5 h-5" />}
+            label="Calendar"
+            active={vistaActual === 'calendario'}
+            onClick={() => setVistaActual('calendario')}
+            collapsed={!sidebarOpen}
+          />
+          <NavItem
+            icon={<BookOpen className="w-5 h-5" />}
+            label="Plant Database"
+            active={vistaActual === 'base-datos'}
+            onClick={() => setVistaActual('base-datos')}
+            collapsed={!sidebarOpen}
+          />
+          
+          <div className="pt-4 border-t border-white/10 mt-4">
+            <NavItem
+              icon={<Settings className="w-5 h-5" />}
+              label="Settings"
+              active={vistaActual === 'configuracion'}
+              onClick={() => setVistaActual('configuracion')}
+              collapsed={!sidebarOpen}
+            />
+            <NavItem
+              icon={<HelpCircle className="w-5 h-5" />}
+              label="Help"
+              active={false}
+              onClick={() => {}}
+              collapsed={!sidebarOpen}
+            />
+          </div>
+        </nav>
+
+        {/* Add New Plant Button */}
+        <div className="p-4 border-t border-white/10">
+          <button className="w-full bg-green-600 hover:bg-green-700 text-white py-3 rounded-xl font-medium transition-all flex items-center justify-center gap-2">
+            <Plus className="w-5 h-5" />
+            {sidebarOpen && <span>Add New Plant</span>}
+          </button>
+        </div>
+      </aside>
+
+      {/* MAIN CONTENT */}
+      <div className="flex-1 flex flex-col overflow-hidden">
+        {/* Top Header */}
+        <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4">
+          <div className="flex items-center justify-between">
+            {/* Search */}
+            <div className="flex items-center gap-4 flex-1 max-w-xl">
+              <button onClick={() => setSidebarOpen(!sidebarOpen)} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg">
+                <LayoutGrid className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+              </button>
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                <input
+                  type="text"
+                  placeholder="Search for a plant..."
+                  className="w-full pl-10 pr-4 py-2 bg-gray-100 dark:bg-gray-700 border-0 rounded-lg text-gray-900 dark:text-white focus:ring-2 focus:ring-green-500 outline-none"
+                />
               </div>
             </div>
-            
-            {/* Navigation */}
-            <div className="flex items-center gap-2 flex-wrap">
-              <button
-                onClick={() => setVista('galeria')}
-                className={`px-4 py-2.5 rounded-xl font-medium transition-all duration-200 ${
-                  vista === 'galeria' 
-                    ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 shadow-sm' 
-                    : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800/50'
-                }`}
-              >
-                <span className="flex items-center gap-2">
-                  🏡 <span className="hidden sm:inline">Galería</span>
-                </span>
-              </button>
-              
-              <button
-                onClick={() => setVista('calendario')}
-                className={`px-4 py-2.5 rounded-xl font-medium transition-all duration-200 ${
-                  vista === 'calendario' 
-                    ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 shadow-sm' 
-                    : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800/50'
-                }`}
-              >
-                <span className="flex items-center gap-2">
-                  <Calendar className="w-4 h-4" />
-                  <span className="hidden sm:inline">Calendario</span>
-                </span>
-              </button>
 
-              <button
-                onClick={() => setMostrarLanding(true)}
-                className="px-4 py-2.5 rounded-xl font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800/50 transition-all duration-200"
-                title="Ver página de inicio"
-              >
-                <span className="flex items-center gap-2">
-                  ℹ️ <span className="hidden sm:inline">Info</span>
-                </span>
+            {/* Right Actions */}
+            <div className="flex items-center gap-3">
+              <button className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg relative">
+                <Bell className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+                <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
               </button>
-
-              <div className="w-px h-8 bg-gray-300 dark:bg-gray-700 mx-1"></div>
-              
-              <button
-                onClick={() => setDarkMode(!darkMode)}
-                className="p-2.5 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800/50 transition-all duration-200"
-                title={darkMode ? 'Modo claro' : 'Modo oscuro'}
-              >
+              <button onClick={toggleDarkMode} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg">
                 {darkMode ? (
-                  <Sun className="w-5 h-5 text-yellow-500" />
+                  <Sun className="w-5 h-5 text-yellow-400" />
                 ) : (
                   <Moon className="w-5 h-5 text-gray-600" />
                 )}
               </button>
-              
-              <button
-                onClick={() => {
-                  setPlantaEditar(null);
-                  setModalAbierto(true);
-                }}
-                className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white px-5 py-2.5 rounded-xl font-medium transition-all duration-200 transform hover:scale-105 shadow-lg shadow-green-500/30 hover:shadow-green-500/50"
-              >
-                <span className="flex items-center gap-2">
-                  <Plus className="w-5 h-5" />
-                  <span className="hidden sm:inline">Nueva Planta</span>
-                </span>
+              <div className="w-px h-6 bg-gray-300 dark:bg-gray-600"></div>
+              <button className="flex items-center gap-2 hover:bg-gray-100 dark:hover:bg-gray-700 px-3 py-2 rounded-lg">
+                <div className="w-8 h-8 bg-gradient-to-br from-green-400 to-emerald-500 rounded-full flex items-center justify-center">
+                  <User className="w-5 h-5 text-white" />
+                </div>
+                <span className="text-sm font-medium text-gray-700 dark:text-gray-300 hidden md:block">Usuario</span>
               </button>
             </div>
           </div>
-        </div>
-      </nav>
+        </header>
 
-      {/* CONTENIDO PRINCIPAL */}
-      <main className="max-w-7xl mx-auto px-4 py-8">
-        {vista === 'galeria' && (
-          <div className="space-y-6">
-            {/* Búsqueda y Filtros */}
-            <div className="flex gap-4 flex-wrap">
-              <div className="flex-1 min-w-[200px] relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                <input
-                  type="text"
-                  placeholder="Buscar plantas..."
-                  value={busqueda}
-                  onChange={(e) => setBusqueda(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-800 dark:text-white focus:ring-2 focus:ring-green-500 outline-none"
-                />
-              </div>
-              <select
-                value={filtroTipo}
-                onChange={(e) => setFiltroTipo(e.target.value)}
-                className="px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-800 dark:text-white focus:ring-2 focus:ring-green-500 outline-none"
-              >
-                <option>Todos</option>
-                {TIPOS_PLANTA.map(tipo => (
-                  <option key={tipo}>{tipo}</option>
-                ))}
-              </select>
-            </div>
+        {/* Content Area */}
+        <main className="flex-1 overflow-y-auto p-6">
+          {vistaActual === 'dashboard' && <DashboardView />}
+          {vistaActual === 'mis-plantas' && <MisPlantasView />}
+          {vistaActual === 'calendario' && <CalendarioView />}
+          {vistaActual === 'base-datos' && <BaseDatosView />}
+          {vistaActual === 'configuracion' && <ConfiguracionView />}
+        </main>
+      </div>
+    </div>
+  );
+}
 
-            {/* Grid de Plantas */}
-            {plantasFiltradas.length === 0 ? (
-              <div className="text-center py-20">
-                <Sprout className="w-20 h-20 mx-auto text-gray-300 dark:text-gray-600 mb-4" />
-                <p className="text-gray-500 dark:text-gray-400 text-lg">
-                  {plantas.length === 0 
-                    ? "Aún no tienes plantas. ¡Agrega tu primera planta!" 
-                    : "No se encontraron plantas"}
-                </p>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {plantasFiltradas.map((planta) => (
-                  <CardPlanta 
-                    key={planta.id} 
-                    planta={planta} 
-                    onEditar={editarPlanta}
-                    onEliminar={eliminarPlanta}
-                    onRegar={marcarRiego}
-                  />
-                ))}
-              </div>
-            )}
-          </div>
-        )}
+// Componente NavItem
+interface NavItemProps {
+  icon: React.ReactNode;
+  label: string;
+  active: boolean;
+  onClick: () => void;
+  collapsed: boolean;
+}
 
-        {vista === 'calendario' && (
-          <VistaCalendario plantas={plantas} onRegar={marcarRiego} />
-        )}
-      </main>
+function NavItem({ icon, label, active, onClick, collapsed }: NavItemProps) {
+  return (
+    <button
+      onClick={onClick}
+      className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
+        active
+          ? 'bg-white/10 text-white'
+          : 'text-white/70 hover:bg-white/5 hover:text-white'
+      }`}
+      title={collapsed ? label : undefined}
+    >
+      {icon}
+      {!collapsed && <span className="font-medium">{label}</span>}
+    </button>
+  );
+}
 
-      {/* MODAL */}
-      {modalAbierto && (
-        <ModalPlanta
-          planta={plantaEditar}
-          onGuardar={agregarPlanta}
-          onCerrar={() => {
-            setModalAbierto(false);
-            setPlantaEditar(null);
-          }}
-        />
-      )}
+// Vistas temporales
+function DashboardView() {
+  return (
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">My Plants Dashboard</h1>
+        <p className="text-gray-600 dark:text-gray-400">Welcome back, get an overview of your plants.</p>
+      </div>
+
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <StatCard title="Total Plants" value="12" change="+2 this month" positive />
+        <StatCard title="Needs Water" value="3" change="Today" />
+        <StatCard title="Healthy" value="10" change="83%" positive />
+        <StatCard title="Needs Attention" value="2" change="Check now" />
+      </div>
+
+      {/* Placeholder */}
+      <div className="bg-white dark:bg-gray-800 rounded-2xl p-12 text-center border-2 border-dashed border-gray-300 dark:border-gray-700">
+        <Sprout className="w-16 h-16 mx-auto text-gray-400 mb-4" />
+        <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">Dashboard en construcción</h3>
+        <p className="text-gray-600 dark:text-gray-400">Las funcionalidades completas se están implementando...</p>
+      </div>
+    </div>
+  );
+}
+
+function MisPlantasView() {
+  return (
+    <div className="text-center py-20">
+      <Sprout className="w-20 h-20 mx-auto text-gray-400 mb-4" />
+      <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Vista Mis Plantas</h2>
+      <p className="text-gray-600 dark:text-gray-400">En desarrollo...</p>
+    </div>
+  );
+}
+
+function CalendarioView() {
+  return (
+    <div className="text-center py-20">
+      <Calendar className="w-20 h-20 mx-auto text-gray-400 mb-4" />
+      <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Vista Calendario</h2>
+      <p className="text-gray-600 dark:text-gray-400">En desarrollo...</p>
+    </div>
+  );
+}
+
+function BaseDatosView() {
+  return (
+    <div className="text-center py-20">
+      <BookOpen className="w-20 h-20 mx-auto text-gray-400 mb-4" />
+      <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Base de Datos de Plantas</h2>
+      <p className="text-gray-600 dark:text-gray-400">En desarrollo...</p>
+    </div>
+  );
+}
+
+function ConfiguracionView() {
+  return (
+    <div className="text-center py-20">
+      <Settings className="w-20 h-20 mx-auto text-gray-400 mb-4" />
+      <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Configuración</h2>
+      <p className="text-gray-600 dark:text-gray-400">En desarrollo...</p>
+    </div>
+  );
+}
+
+interface StatCardProps {
+  title: string;
+  value: string;
+  change: string;
+  positive?: boolean;
+}
+
+function StatCard({ title, value, change, positive }: StatCardProps) {
+  return (
+    <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 border border-gray-200 dark:border-gray-700">
+      <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">{title}</p>
+      <h3 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">{value}</h3>
+      <p className={`text-sm ${positive ? 'text-green-600' : 'text-gray-500'}`}>{change}</p>
     </div>
   );
 }
