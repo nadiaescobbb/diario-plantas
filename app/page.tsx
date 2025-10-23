@@ -6,7 +6,7 @@ import {
   HelpCircle, Plus, Search, Sun, Moon, User, Bell, Home,
   TrendingUp, AlertTriangle
 } from 'lucide-react';
-import { Planta } from './types-completo';
+import { Planta, AccionCuidado  } from './types-completo';
 import { 
   calcularEstadisticas, 
   PLANTAS_EJEMPLO,
@@ -14,6 +14,7 @@ import {
   determinarEstadoSalud
 } from './utils-completo';
 import PlantCard from './components/CardPlanta';
+import PlantDetailModal from './components/PlantDetailModal';
 
 type Vista = 'dashboard' | 'mis-plantas' | 'calendario' | 'base-datos' | 'configuracion';
 
@@ -23,7 +24,9 @@ export default function DiariePlantasPro() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [plantas, setPlantas] = useState<Planta[]>([]);
   const [cargando, setCargando] = useState(true);
-
+  const [plantaSeleccionada, setPlantaSeleccionada] = useState<Planta | null>(null);
+  const [historialCuidados, setHistorialCuidados] = useState<AccionCuidado[]>([]);
+  
   // Cargar plantas
   useEffect(() => {
     const plantasGuardadas = localStorage.getItem('plantas-pro');
@@ -44,6 +47,21 @@ export default function DiariePlantasPro() {
     }
     setCargando(false);
   }, []);
+
+  // Cargar historial
+  useEffect(() => {
+  const historialGuardado = localStorage.getItem('historial-cuidados');
+  if (historialGuardado) {
+    setHistorialCuidados(JSON.parse(historialGuardado));
+  }
+}, []);
+
+  // Guardar historial
+  useEffect(() => {
+  if (historialCuidados.length >= 0) {
+    localStorage.setItem('historial-cuidados', JSON.stringify(historialCuidados));
+  }
+}, [historialCuidados]);
 
   // Guardar plantas
   useEffect(() => {
@@ -83,9 +101,25 @@ const handleEliminar = (id: number) => {
   };
 
   const handleClickPlanta = (planta: Planta) => {
-    // Por ahora solo un alert, luego abriremos vista detalle
-    alert('Vista detalle en desarrollo. Planta: ' + planta.nombre);
+  setPlantaSeleccionada(planta);
+};
+
+const handleAgregarAccion = (accion: Omit<AccionCuidado, 'id'>) => {
+  const nuevaAccion: AccionCuidado = {
+    ...accion,
+    id: generarId()
   };
+  setHistorialCuidados([...historialCuidados, nuevaAccion]);
+  
+  // Si es riego, actualizar la planta
+  if (accion.tipo === 'riego') {
+    handleRegar(accion.plantaId);
+  }
+};
+
+const handleEliminarAccion = (id: number) => {
+  setHistorialCuidados(historialCuidados.filter(a => a.id !== id));
+};
 
   if (cargando) {
     return (
@@ -227,6 +261,20 @@ const handleEliminar = (id: number) => {
           {vistaActual === 'configuracion' && <ConfiguracionView />}
         </main>
       </div>
+
+                  {/* Modal de detalle */}
+      {plantaSeleccionada && (
+        <PlantDetailModal
+          planta={plantaSeleccionada}
+          historial={historialCuidados}
+          onClose={() => setPlantaSeleccionada(null)}
+          onRegar={handleRegar}
+          onAgregarAccion={handleAgregarAccion}
+          onEliminarAccion={handleEliminarAccion}
+          onEditar={handleEditar}
+        />
+      )}
+      
     </div>
   );
 }
