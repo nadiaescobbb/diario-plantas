@@ -1,27 +1,56 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   LayoutGrid, Sprout, Calendar, BookOpen, Settings, 
-  HelpCircle, Plus, Search, Sun, Moon, User, LogOut,
-  Bell, Home
+  HelpCircle, Plus, Search, Sun, Moon, User, Bell, Home,
+  TrendingUp, AlertTriangle
 } from 'lucide-react';
+import { Planta } from './types-completo';
+import { 
+  calcularEstadisticas, 
+  PLANTAS_EJEMPLO,
+  generarId,
+  determinarEstadoSalud
+} from './utils-completo';
+import PlantCard from './components/CardPlanta';
 
-// Tipos
 type Vista = 'dashboard' | 'mis-plantas' | 'calendario' | 'base-datos' | 'configuracion';
 
 export default function DiariePlantasPro() {
   const [vistaActual, setVistaActual] = useState<Vista>('dashboard');
   const [darkMode, setDarkMode] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [plantas, setPlantas] = useState<Planta[]>([]);
+  const [cargando, setCargando] = useState(true);
 
+  // Cargar plantas
   useEffect(() => {
-    const modoGuardado = localStorage.getItem('darkMode') === 'true';
-    setDarkMode(modoGuardado);
-    if (modoGuardado) {
+    const plantasGuardadas = localStorage.getItem('plantas-pro');
+    const modoOscuro = localStorage.getItem('darkMode') === 'true';
+    
+    if (plantasGuardadas) {
+      setPlantas(JSON.parse(plantasGuardadas));
+    } else {
+      // Cargar plantas de ejemplo
+      const plantasConId = PLANTAS_EJEMPLO.map(p => ({ ...p, id: generarId() }));
+      setPlantas(plantasConId);
+      localStorage.setItem('plantas-pro', JSON.stringify(plantasConId));
+    }
+    
+    setDarkMode(modoOscuro);
+    if (modoOscuro) {
       document.documentElement.classList.add('dark');
     }
+    setCargando(false);
   }, []);
+
+  // Guardar plantas
+  useEffect(() => {
+    if (!cargando && plantas.length >= 0) {
+      localStorage.setItem('plantas-pro', JSON.stringify(plantas));
+    }
+  }, [plantas, cargando]);
 
   const toggleDarkMode = () => {
     setDarkMode(!darkMode);
@@ -29,11 +58,50 @@ export default function DiariePlantasPro() {
     document.documentElement.classList.toggle('dark');
   };
 
+  const handleRegar = (id: number) => {
+    setPlantas(plantas.map(p => {
+      if (p.id === id) {
+        return {
+          ...p,
+          ultimoRiego: new Date().toISOString(),
+          estadoSalud: determinarEstadoSalud({ ...p, ultimoRiego: new Date().toISOString() })
+        };
+      }
+      return p;
+    }));
+  };
+
+const handleEliminar = (id: number) => {
+    if (window.confirm('¿Estás seguro de que deseas eliminar esta planta?')) {
+      setPlantas(plantas.filter(p => p.id !== id));
+    }
+  };
+
+  const handleEditar = (planta: Planta) => {
+    // Por ahora solo un alert, luego haremos el modal completo
+    alert('Editar funcionalidad en desarrollo. Planta: ' + planta.nombre);
+  };
+
+  const handleClickPlanta = (planta: Planta) => {
+    // Por ahora solo un alert, luego abriremos vista detalle
+    alert('Vista detalle en desarrollo. Planta: ' + planta.nombre);
+  };
+
+  if (cargando) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-gray-50 dark:bg-gray-900">
+        <div className="text-center">
+          <Sprout className="w-16 h-16 mx-auto text-green-600 animate-pulse mb-4" />
+          <p className="text-gray-600 dark:text-gray-400">Cargando...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="flex h-screen bg-gray-50 dark:bg-gray-900 overflow-hidden">
       {/* SIDEBAR */}
       <aside className={`${sidebarOpen ? 'w-64' : 'w-20'} bg-[#2d5016] dark:bg-gray-800 text-white transition-all duration-300 flex flex-col`}>
-        {/* Logo */}
         <div className="p-6 border-b border-white/10">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center flex-shrink-0">
@@ -48,7 +116,6 @@ export default function DiariePlantasPro() {
           </div>
         </div>
 
-        {/* Navigation */}
         <nav className="flex-1 p-4 space-y-2">
           <NavItem
             icon={<Home className="w-5 h-5" />}
@@ -97,9 +164,11 @@ export default function DiariePlantasPro() {
           </div>
         </nav>
 
-        {/* Add New Plant Button */}
         <div className="p-4 border-t border-white/10">
-          <button className="w-full bg-green-600 hover:bg-green-700 text-white py-3 rounded-xl font-medium transition-all flex items-center justify-center gap-2">
+          <button 
+            onClick={() => alert('Agregar planta en desarrollo')}
+            className="w-full bg-green-600 hover:bg-green-700 text-white py-3 rounded-xl font-medium transition-all flex items-center justify-center gap-2"
+          >
             <Plus className="w-5 h-5" />
             {sidebarOpen && <span>Add New Plant</span>}
           </button>
@@ -108,10 +177,8 @@ export default function DiariePlantasPro() {
 
       {/* MAIN CONTENT */}
       <div className="flex-1 flex flex-col overflow-hidden">
-        {/* Top Header */}
         <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4">
           <div className="flex items-center justify-between">
-            {/* Search */}
             <div className="flex items-center gap-4 flex-1 max-w-xl">
               <button onClick={() => setSidebarOpen(!sidebarOpen)} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg">
                 <LayoutGrid className="w-5 h-5 text-gray-600 dark:text-gray-400" />
@@ -126,33 +193,34 @@ export default function DiariePlantasPro() {
               </div>
             </div>
 
-            {/* Right Actions */}
             <div className="flex items-center gap-3">
               <button className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg relative">
                 <Bell className="w-5 h-5 text-gray-600 dark:text-gray-400" />
                 <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
               </button>
               <button onClick={toggleDarkMode} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg">
-                {darkMode ? (
-                  <Sun className="w-5 h-5 text-yellow-400" />
-                ) : (
-                  <Moon className="w-5 h-5 text-gray-600" />
-                )}
+                {darkMode ? <Sun className="w-5 h-5 text-yellow-400" /> : <Moon className="w-5 h-5 text-gray-600" />}
               </button>
               <div className="w-px h-6 bg-gray-300 dark:bg-gray-600"></div>
               <button className="flex items-center gap-2 hover:bg-gray-100 dark:hover:bg-gray-700 px-3 py-2 rounded-lg">
                 <div className="w-8 h-8 bg-gradient-to-br from-green-400 to-emerald-500 rounded-full flex items-center justify-center">
                   <User className="w-5 h-5 text-white" />
                 </div>
-                <span className="text-sm font-medium text-gray-700 dark:text-gray-300 hidden md:block">Usuario</span>
               </button>
             </div>
           </div>
         </header>
 
-        {/* Content Area */}
         <main className="flex-1 overflow-y-auto p-6">
-          {vistaActual === 'dashboard' && <DashboardView />}
+          {vistaActual === 'dashboard' && (
+            <DashboardView 
+              plantas={plantas} 
+              onRegar={handleRegar}
+              onEditar={handleEditar}
+              onEliminar={handleEliminar}
+              onClickPlanta={handleClickPlanta}
+            />
+          )}
           {vistaActual === 'mis-plantas' && <MisPlantasView />}
           {vistaActual === 'calendario' && <CalendarioView />}
           {vistaActual === 'base-datos' && <BaseDatosView />}
@@ -163,7 +231,7 @@ export default function DiariePlantasPro() {
   );
 }
 
-// Componente NavItem
+// NavItem Component
 interface NavItemProps {
   icon: React.ReactNode;
   label: string;
@@ -177,9 +245,7 @@ function NavItem({ icon, label, active, onClick, collapsed }: NavItemProps) {
     <button
       onClick={onClick}
       className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
-        active
-          ? 'bg-white/10 text-white'
-          : 'text-white/70 hover:bg-white/5 hover:text-white'
+        active ? 'bg-white/10 text-white' : 'text-white/70 hover:bg-white/5 hover:text-white'
       }`}
       title={collapsed ? label : undefined}
     >
@@ -189,8 +255,18 @@ function NavItem({ icon, label, active, onClick, collapsed }: NavItemProps) {
   );
 }
 
-// Vistas temporales
-function DashboardView() {
+// Dashboard View
+interface DashboardViewProps {
+  plantas: Planta[];
+  onRegar: (id: number) => void;
+  onEditar: (planta: Planta) => void;
+  onEliminar: (id: number) => void;
+  onClickPlanta: (planta: Planta) => void;
+}
+
+function DashboardView({ plantas, onRegar, onEditar, onEliminar, onClickPlanta }: DashboardViewProps) {
+  const stats = calcularEstadisticas(plantas);
+
   return (
     <div className="space-y-6">
       <div>
@@ -200,75 +276,128 @@ function DashboardView() {
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <StatCard title="Total Plants" value="12" change="+2 this month" positive />
-        <StatCard title="Needs Water" value="3" change="Today" />
-        <StatCard title="Healthy" value="10" change="83%" positive />
-        <StatCard title="Needs Attention" value="2" change="Check now" />
+        <StatCard 
+          title="Total Plants" 
+          value={stats.total.toString()} 
+          change="Active" 
+          icon={<Sprout className="w-6 h-6" />}
+          color="green"
+        />
+        <StatCard 
+          title="Needs Water" 
+          value={stats.necesitanRiego.toString()} 
+          change="Today" 
+          icon={<AlertTriangle className="w-6 h-6" />}
+          color="red"
+        />
+        <StatCard 
+          title="Healthy" 
+          value={stats.saludables.toString()} 
+          change={`${stats.porcentajeSaludables}%`}
+          icon={<TrendingUp className="w-6 h-6" />}
+          color="green"
+          positive
+        />
+        <StatCard 
+          title="Needs Attention" 
+          value={stats.necesitanAtencion.toString()} 
+          change="Check now" 
+          icon={<AlertTriangle className="w-6 h-6" />}
+          color="yellow"
+        />
       </div>
 
-      {/* Placeholder */}
-      <div className="bg-white dark:bg-gray-800 rounded-2xl p-12 text-center border-2 border-dashed border-gray-300 dark:border-gray-700">
-        <Sprout className="w-16 h-16 mx-auto text-gray-400 mb-4" />
-        <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">Dashboard en construcción</h3>
-        <p className="text-gray-600 dark:text-gray-400">Las funcionalidades completas se están implementando...</p>
-      </div>
+      {/* Plants Grid */}
+      {plantas.length === 0 ? (
+        <div className="bg-white dark:bg-gray-800 rounded-2xl p-12 text-center border-2 border-dashed border-gray-300 dark:border-gray-700">
+          <Sprout className="w-16 h-16 mx-auto text-gray-400 mb-4" />
+          <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">No plants yet</h3>
+          <p className="text-gray-600 dark:text-gray-400 mb-4">Add your first plant to get started</p>
+          <button className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-xl font-medium">
+            Add New Plant
+          </button>
+        </div>
+      ) : (
+        <div>
+          <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">Your Plants</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {plantas.map((planta) => (
+              <PlantCard
+                key={planta.id}
+                planta={planta}
+                onRegar={onRegar}
+                onEditar={onEditar}
+                onEliminar={onEliminar}
+                onClick={onClickPlanta}
+              />
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
 
-function MisPlantasView() {
-  return (
-    <div className="text-center py-20">
-      <Sprout className="w-20 h-20 mx-auto text-gray-400 mb-4" />
-      <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Vista Mis Plantas</h2>
-      <p className="text-gray-600 dark:text-gray-400">En desarrollo...</p>
-    </div>
-  );
-}
-
-function CalendarioView() {
-  return (
-    <div className="text-center py-20">
-      <Calendar className="w-20 h-20 mx-auto text-gray-400 mb-4" />
-      <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Vista Calendario</h2>
-      <p className="text-gray-600 dark:text-gray-400">En desarrollo...</p>
-    </div>
-  );
-}
-
-function BaseDatosView() {
-  return (
-    <div className="text-center py-20">
-      <BookOpen className="w-20 h-20 mx-auto text-gray-400 mb-4" />
-      <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Base de Datos de Plantas</h2>
-      <p className="text-gray-600 dark:text-gray-400">En desarrollo...</p>
-    </div>
-  );
-}
-
-function ConfiguracionView() {
-  return (
-    <div className="text-center py-20">
-      <Settings className="w-20 h-20 mx-auto text-gray-400 mb-4" />
-      <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Configuración</h2>
-      <p className="text-gray-600 dark:text-gray-400">En desarrollo...</p>
-    </div>
-  );
-}
-
+// Stat Card Component
 interface StatCardProps {
   title: string;
   value: string;
   change: string;
+  icon: React.ReactNode;
+  color: 'green' | 'red' | 'yellow' | 'blue';
   positive?: boolean;
 }
 
-function StatCard({ title, value, change, positive }: StatCardProps) {
+function StatCard({ title, value, change, icon, color, positive }: StatCardProps) {
+  const colorClasses = {
+    green: 'bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400',
+    red: 'bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400',
+    yellow: 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-600 dark:text-yellow-400',
+    blue: 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400'
+  };
+
   return (
     <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 border border-gray-200 dark:border-gray-700">
-      <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">{title}</p>
+      <div className="flex items-center justify-between mb-4">
+        <p className="text-sm text-gray-600 dark:text-gray-400 font-medium">{title}</p>
+        <div className={`p-2 rounded-lg ${colorClasses[color]}`}>
+          {icon}
+        </div>
+      </div>
       <h3 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">{value}</h3>
-      <p className={`text-sm ${positive ? 'text-green-600' : 'text-gray-500'}`}>{change}</p>
+      <p className={`text-sm ${positive ? 'text-green-600 dark:text-green-400' : 'text-gray-500 dark:text-gray-400'}`}>
+        {change}
+      </p>
     </div>
   );
 }
+
+// Placeholder Views
+function MisPlantasView() {
+  return <PlaceholderView icon={<Sprout className="w-20 h-20" />} title="Vista Mis Plantas" />;
+}
+
+function CalendarioView() {
+  return <PlaceholderView icon={<Calendar className="w-20 h-20" />} title="Vista Calendario" />;
+}
+
+function BaseDatosView() {
+  return <PlaceholderView icon={<BookOpen className="w-20 h-20" />} title="Base de Datos" />;
+}
+
+function ConfiguracionView() {
+  return <PlaceholderView icon={<Settings className="w-20 h-20" />} title="Configuración" />;
+}
+
+function PlaceholderView({ icon, title }: { icon: React.ReactNode; title: string }) {
+  return (
+    <div className="text-center py-20">
+      <div className="mx-auto text-gray-400 mb-4">{icon}</div>
+      <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">{title}</h2>
+      <p className="text-gray-600 dark:text-gray-400">En desarrollo...</p>
+    </div>
+  );
+}
+
+
+
