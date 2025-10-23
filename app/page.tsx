@@ -4,48 +4,251 @@ import React, { useState, useEffect } from 'react';
 import { 
   LayoutGrid, Sprout, Calendar, BookOpen, Settings, 
   HelpCircle, Plus, Search, Sun, Moon, User, Bell, Home,
-  TrendingUp, AlertTriangle
+  TrendingUp, AlertTriangle, Globe
 } from 'lucide-react';
-import { Planta, AccionCuidado  } from './types-completo';
-import { 
-  calcularEstadisticas, 
-  PLANTAS_EJEMPLO,
-  generarId,
-  determinarEstadoSalud
-} from './utils-completo';
-import PlantCard from './components/CardPlanta';
-import PlantDetailModal from './components/PlantDetailModal';
-import './i18n';
-import { useTranslation } from 'react-i18next';
 
+// Mock de tipos (reemplaza con tus imports reales)
+interface Planta {
+  id: number;
+  nombre: string;
+  nombreCientifico: string;
+  tipo: string;
+  ubicacion: string;
+  foto: string;
+  frecuenciaRiego: number;
+  ultimoRiego: string;
+  estadoSalud: 'excelente' | 'bueno' | 'necesita-atencion' | 'critico';
+  notas: string;
+}
+
+interface AccionCuidado {
+  id: number;
+  plantaId: number;
+  tipo: 'riego' | 'fertilizante' | 'poda' | 'trasplante' | 'nota';
+  fecha: string;
+  notas?: string;
+}
 
 type Vista = 'dashboard' | 'mis-plantas' | 'calendario' | 'base-datos' | 'configuracion';
 
+// Mock de i18n simplificado (reemplaza con tu useTranslation real)
+const translations = {
+  en: {
+    app_title: "Plant Diary",
+    app_version: "v2.0 Pro",
+    dashboard: "Dashboard",
+    my_plants: "My Plants",
+    calendar: "Calendar",
+    database: "Plant Database",
+    settings: "Settings",
+    help: "Help",
+    add_new_plant: "Add New Plant",
+    loading: "Loading...",
+    welcome: "Welcome back, get an overview of your plants.",
+    total_plants: "Total Plants",
+    needs_water: "Needs Water",
+    healthy: "Healthy",
+    needs_attention: "Needs Attention",
+    no_plants: "No plants yet",
+    add_first: "Add your first plant to get started",
+    view_in_development: "In development...",
+    active: "Active",
+    today: "Today",
+    check_now: "Check now",
+    your_plants: "Your Plants",
+    search_placeholder: "Search for a plant...",
+    confirm_delete: "Are you sure you want to delete this plant?",
+    edit_in_dev: "Edit functionality in development. Plant: ",
+    add_plant_dev: "Add plant in development",
+    language: "Language",
+    water: "Water",
+    days_ago: "d ago"
+  },
+  es: {
+    app_title: "Diario de Plantas",
+    app_version: "v2.0 Pro",
+    dashboard: "Panel",
+    my_plants: "Mis Plantas",
+    calendar: "Calendario",
+    database: "Base de Datos",
+    settings: "Configuración",
+    help: "Ayuda",
+    add_new_plant: "Agregar Planta",
+    loading: "Cargando...",
+    welcome: "Bienvenido, revisa el estado de tus plantas.",
+    total_plants: "Plantas Totales",
+    needs_water: "Necesitan Agua",
+    healthy: "Saludables",
+    needs_attention: "Necesitan Atención",
+    no_plants: "Aún no hay plantas",
+    add_first: "Agrega tu primera planta para comenzar",
+    view_in_development: "En desarrollo...",
+    active: "Activas",
+    today: "Hoy",
+    check_now: "Revisar ahora",
+    your_plants: "Tus Plantas",
+    search_placeholder: "Buscar una planta...",
+    confirm_delete: "¿Estás seguro de que deseas eliminar esta planta?",
+    edit_in_dev: "Editar funcionalidad en desarrollo. Planta: ",
+    add_plant_dev: "Agregar planta en desarrollo",
+    language: "Idioma",
+    water: "Regar",
+    days_ago: "d atrás"
+  }
+};
+
+// Utilidades mock
+const generarId = () => Math.floor(Math.random() * 1000000);
+
+const determinarEstadoSalud = (planta: Planta): Planta['estadoSalud'] => {
+  const diasSinRiego = Math.floor(
+    (new Date().getTime() - new Date(planta.ultimoRiego).getTime()) / (1000 * 60 * 60 * 24)
+  );
+  
+  if (diasSinRiego > planta.frecuenciaRiego * 1.5) return 'critico';
+  if (diasSinRiego > planta.frecuenciaRiego) return 'necesita-atencion';
+  if (diasSinRiego > planta.frecuenciaRiego * 0.7) return 'bueno';
+  return 'excelente';
+};
+
+const calcularEstadisticas = (plantas: Planta[]) => {
+  const total = plantas.length;
+  const necesitanRiego = plantas.filter(p => {
+    const dias = Math.floor(
+      (new Date().getTime() - new Date(p.ultimoRiego).getTime()) / (1000 * 60 * 60 * 24)
+    );
+    return dias >= p.frecuenciaRiego;
+  }).length;
+  
+  const saludables = plantas.filter(p => 
+    p.estadoSalud === 'excelente' || p.estadoSalud === 'bueno'
+  ).length;
+  
+  const necesitanAtencion = plantas.filter(p => 
+    p.estadoSalud === 'necesita-atencion' || p.estadoSalud === 'critico'
+  ).length;
+  
+  return {
+    total,
+    necesitanRiego,
+    saludables,
+    necesitanAtencion,
+    porcentajeSaludables: total > 0 ? Math.round((saludables / total) * 100) : 0
+  };
+};
+
+const PLANTAS_EJEMPLO: Omit<Planta, 'id'>[] = [
+  {
+    nombre: 'Monstera Deliciosa',
+    nombreCientifico: 'Monstera deliciosa',
+    tipo: 'Interior',
+    ubicacion: 'Sala',
+    foto: '🌿',
+    frecuenciaRiego: 7,
+    ultimoRiego: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
+    estadoSalud: 'bueno',
+    notas: 'Le gusta la luz indirecta'
+  },
+  {
+    nombre: 'Pothos',
+    nombreCientifico: 'Epipremnum aureum',
+    tipo: 'Interior',
+    ubicacion: 'Oficina',
+    foto: '🍃',
+    frecuenciaRiego: 5,
+    ultimoRiego: new Date(Date.now() - 8 * 24 * 60 * 60 * 1000).toISOString(),
+    estadoSalud: 'necesita-atencion',
+    notas: 'Muy resistente'
+  },
+  {
+    nombre: 'Suculenta Mix',
+    nombreCientifico: 'Echeveria sp.',
+    tipo: 'Suculenta',
+    ubicacion: 'Ventana',
+    foto: '🌵',
+    frecuenciaRiego: 14,
+    ultimoRiego: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
+    estadoSalud: 'excelente',
+    notas: 'Riego escaso'
+  }
+];
+
+// Componente PlantCard
+interface PlantCardProps {
+  planta: Planta;
+  onRegar: (id: number) => void;
+  onClick: (planta: Planta) => void;
+  t: (key: string) => string;
+}
+
+function PlantCard({ planta, onRegar, onClick, t }: PlantCardProps) {
+  const diasSinRiego = Math.floor(
+    (new Date().getTime() - new Date(planta.ultimoRiego).getTime()) / (1000 * 60 * 60 * 24)
+  );
+
+  const estadoColors = {
+    'excelente': 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
+    'bueno': 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
+    'necesita-atencion': 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400',
+    'critico': 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+  };
+
+  return (
+    <div 
+      onClick={() => onClick(planta)}
+      className="bg-white dark:bg-gray-800 rounded-2xl p-5 border border-gray-200 dark:border-gray-700 hover:shadow-lg transition-all cursor-pointer"
+    >
+      <div className="flex items-start justify-between mb-4">
+        <div className="text-4xl">{planta.foto}</div>
+        <span className={`px-2 py-1 rounded-lg text-xs font-medium ${estadoColors[planta.estadoSalud]}`}>
+          {planta.estadoSalud}
+        </span>
+      </div>
+      
+      <h3 className="font-bold text-gray-900 dark:text-white mb-1">{planta.nombre}</h3>
+      <p className="text-sm text-gray-500 dark:text-gray-400 mb-3 italic">{planta.nombreCientifico}</p>
+      
+      <div className="flex items-center justify-between text-sm">
+        <span className="text-gray-600 dark:text-gray-400">
+          {diasSinRiego}{t('days_ago')}
+        </span>
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            onRegar(planta.id);
+          }}
+          className="px-3 py-1 bg-blue-500 hover:bg-blue-600 text-white rounded-lg text-xs font-medium transition-colors"
+        >
+          💧 {t('water')}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// Componente Principal
 export default function DiariePlantasPro() {
   const [vistaActual, setVistaActual] = useState<Vista>('dashboard');
   const [darkMode, setDarkMode] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [plantas, setPlantas] = useState<Planta[]>([]);
   const [cargando, setCargando] = useState(true);
-  const [plantaSeleccionada, setPlantaSeleccionada] = useState<Planta | null>(null);
-  const [historialCuidados, setHistorialCuidados] = useState<AccionCuidado[]>([]);
-  const { t, i18n } = useTranslation();
+  const [lang, setLang] = useState<'en' | 'es'>('es');
+  const [showLangMenu, setShowLangMenu] = useState(false);
 
-  const handleChangeLanguage = (lang: string) => {
-  i18n.changeLanguage(lang);
-  localStorage.setItem("lang", lang);
-};
+  // Función de traducción
+  const t = (key: string) => translations[lang][key as keyof typeof translations.en] || key;
 
-  
-  // Cargar plantas
   useEffect(() => {
+    const savedLang = localStorage.getItem('lang') as 'en' | 'es' || 'es';
     const plantasGuardadas = localStorage.getItem('plantas-pro');
     const modoOscuro = localStorage.getItem('darkMode') === 'true';
+    
+    setLang(savedLang);
     
     if (plantasGuardadas) {
       setPlantas(JSON.parse(plantasGuardadas));
     } else {
-      // Cargar plantas de ejemplo
       const plantasConId = PLANTAS_EJEMPLO.map(p => ({ ...p, id: generarId() }));
       setPlantas(plantasConId);
       localStorage.setItem('plantas-pro', JSON.stringify(plantasConId));
@@ -58,22 +261,6 @@ export default function DiariePlantasPro() {
     setCargando(false);
   }, []);
 
-  // Cargar historial
-  useEffect(() => {
-  const historialGuardado = localStorage.getItem('historial-cuidados');
-  if (historialGuardado) {
-    setHistorialCuidados(JSON.parse(historialGuardado));
-  }
-}, []);
-
-  // Guardar historial
-  useEffect(() => {
-  if (historialCuidados.length >= 0) {
-    localStorage.setItem('historial-cuidados', JSON.stringify(historialCuidados));
-  }
-}, [historialCuidados]);
-
-  // Guardar plantas
   useEffect(() => {
     if (!cargando && plantas.length >= 0) {
       localStorage.setItem('plantas-pro', JSON.stringify(plantas));
@@ -84,6 +271,12 @@ export default function DiariePlantasPro() {
     setDarkMode(!darkMode);
     localStorage.setItem('darkMode', String(!darkMode));
     document.documentElement.classList.toggle('dark');
+  };
+
+  const handleChangeLanguage = (newLang: 'en' | 'es') => {
+    setLang(newLang);
+    localStorage.setItem('lang', newLang);
+    setShowLangMenu(false);
   };
 
   const handleRegar = (id: number) => {
@@ -99,48 +292,32 @@ export default function DiariePlantasPro() {
     }));
   };
 
-const handleEliminar = (id: number) => {
-    if (window.confirm('¿Estás seguro de que deseas eliminar esta planta?')) {
+  const handleEliminar = (id: number) => {
+    if (window.confirm(t('confirm_delete'))) {
       setPlantas(plantas.filter(p => p.id !== id));
     }
   };
 
   const handleEditar = (planta: Planta) => {
-    // Por ahora solo un alert, luego haremos el modal completo
-    alert('Editar funcionalidad en desarrollo. Planta: ' + planta.nombre);
+    alert(t('edit_in_dev') + planta.nombre);
   };
 
   const handleClickPlanta = (planta: Planta) => {
-  setPlantaSeleccionada(planta);
-};
-
-const handleAgregarAccion = (accion: Omit<AccionCuidado, 'id'>) => {
-  const nuevaAccion: AccionCuidado = {
-    ...accion,
-    id: generarId()
+    console.log('Planta seleccionada:', planta);
   };
-  setHistorialCuidados([...historialCuidados, nuevaAccion]);
-  
-  // Si es riego, actualizar la planta
-  if (accion.tipo === 'riego') {
-    handleRegar(accion.plantaId);
-  }
-};
-
-const handleEliminarAccion = (id: number) => {
-  setHistorialCuidados(historialCuidados.filter(a => a.id !== id));
-};
 
   if (cargando) {
     return (
       <div className="flex h-screen items-center justify-center bg-gray-50 dark:bg-gray-900">
         <div className="text-center">
           <Sprout className="w-16 h-16 mx-auto text-green-600 animate-pulse mb-4" />
-          <p className="text-gray-600 dark:text-gray-400">Cargando...</p>
+          <p className="text-gray-600 dark:text-gray-400">{t('loading')}</p>
         </div>
       </div>
     );
   }
+
+  const stats = calcularEstadisticas(plantas);
 
   return (
     <div className="flex h-screen bg-gray-50 dark:bg-gray-900 overflow-hidden">
@@ -153,8 +330,8 @@ const handleEliminarAccion = (id: number) => {
             </div>
             {sidebarOpen && (
               <div>
-                <h1 className="font-bold text-lg">Diario de Plantas</h1>
-                <p className="text-xs text-white/60">v2.0 Pro</p>
+                <h1 className="font-bold text-lg">{t('app_title')}</h1>
+                <p className="text-xs text-white/60">{t('app_version')}</p>
               </div>
             )}
           </div>
@@ -163,28 +340,28 @@ const handleEliminarAccion = (id: number) => {
         <nav className="flex-1 p-4 space-y-2">
           <NavItem
             icon={<Home className="w-5 h-5" />}
-            label="Dashboard"
+            label={t('dashboard')}
             active={vistaActual === 'dashboard'}
             onClick={() => setVistaActual('dashboard')}
             collapsed={!sidebarOpen}
           />
           <NavItem
             icon={<Sprout className="w-5 h-5" />}
-            label="My Plants"
+            label={t('my_plants')}
             active={vistaActual === 'mis-plantas'}
             onClick={() => setVistaActual('mis-plantas')}
             collapsed={!sidebarOpen}
           />
           <NavItem
             icon={<Calendar className="w-5 h-5" />}
-            label="Calendar"
+            label={t('calendar')}
             active={vistaActual === 'calendario'}
             onClick={() => setVistaActual('calendario')}
             collapsed={!sidebarOpen}
           />
           <NavItem
             icon={<BookOpen className="w-5 h-5" />}
-            label="Plant Database"
+            label={t('database')}
             active={vistaActual === 'base-datos'}
             onClick={() => setVistaActual('base-datos')}
             collapsed={!sidebarOpen}
@@ -193,14 +370,14 @@ const handleEliminarAccion = (id: number) => {
           <div className="pt-4 border-t border-white/10 mt-4">
             <NavItem
               icon={<Settings className="w-5 h-5" />}
-              label="Settings"
+              label={t('settings')}
               active={vistaActual === 'configuracion'}
               onClick={() => setVistaActual('configuracion')}
               collapsed={!sidebarOpen}
             />
             <NavItem
               icon={<HelpCircle className="w-5 h-5" />}
-              label="Help"
+              label={t('help')}
               active={false}
               onClick={() => {}}
               collapsed={!sidebarOpen}
@@ -210,11 +387,11 @@ const handleEliminarAccion = (id: number) => {
 
         <div className="p-4 border-t border-white/10">
           <button 
-            onClick={() => alert('Agregar planta en desarrollo')}
+            onClick={() => alert(t('add_plant_dev'))}
             className="w-full bg-green-600 hover:bg-green-700 text-white py-3 rounded-xl font-medium transition-all flex items-center justify-center gap-2"
           >
             <Plus className="w-5 h-5" />
-            {sidebarOpen && <span>Add New Plant</span>}
+            {sidebarOpen && <span>{t('add_new_plant')}</span>}
           </button>
         </div>
       </aside>
@@ -231,13 +408,40 @@ const handleEliminarAccion = (id: number) => {
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                 <input
                   type="text"
-                  placeholder="Search for a plant..."
+                  placeholder={t('search_placeholder')}
                   className="w-full pl-10 pr-4 py-2 bg-gray-100 dark:bg-gray-700 border-0 rounded-lg text-gray-900 dark:text-white focus:ring-2 focus:ring-green-500 outline-none"
                 />
               </div>
             </div>
 
             <div className="flex items-center gap-3">
+              {/* Language Selector */}
+              <div className="relative">
+                <button 
+                  onClick={() => setShowLangMenu(!showLangMenu)}
+                  className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg flex items-center gap-2"
+                >
+                  <Globe className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300 uppercase">{lang}</span>
+                </button>
+                {showLangMenu && (
+                  <div className="absolute right-0 mt-2 w-40 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 py-1 z-50">
+                    <button
+                      onClick={() => handleChangeLanguage('es')}
+                      className={`w-full px-4 py-2 text-left text-sm hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2 ${lang === 'es' ? 'bg-gray-50 dark:bg-gray-700' : ''}`}
+                    >
+                      🇪🇸 Español
+                    </button>
+                    <button
+                      onClick={() => handleChangeLanguage('en')}
+                      className={`w-full px-4 py-2 text-left text-sm hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2 ${lang === 'en' ? 'bg-gray-50 dark:bg-gray-700' : ''}`}
+                    >
+                      🇬🇧 English
+                    </button>
+                  </div>
+                )}
+              </div>
+              
               <button className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg relative">
                 <Bell className="w-5 h-5 text-gray-600 dark:text-gray-400" />
                 <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
@@ -257,48 +461,92 @@ const handleEliminarAccion = (id: number) => {
 
         <main className="flex-1 overflow-y-auto p-6">
           {vistaActual === 'dashboard' && (
-            <DashboardView 
-              plantas={plantas} 
-              onRegar={handleRegar}
-              onEditar={handleEditar}
-              onEliminar={handleEliminar}
-              onClickPlanta={handleClickPlanta}
+            <div className="space-y-6">
+              <div>
+                <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
+                  {t('my_plants')} {t('dashboard')}
+                </h1>
+                <p className="text-gray-600 dark:text-gray-400">{t('welcome')}</p>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <StatCard 
+                  title={t('total_plants')} 
+                  value={stats.total.toString()} 
+                  change={t('active')} 
+                  icon={<Sprout className="w-6 h-6" />}
+                  color="green"
+                />
+                <StatCard 
+                  title={t('needs_water')} 
+                  value={stats.necesitanRiego.toString()} 
+                  change={t('today')} 
+                  icon={<AlertTriangle className="w-6 h-6" />}
+                  color="red"
+                />
+                <StatCard 
+                  title={t('healthy')} 
+                  value={stats.saludables.toString()} 
+                  change={`${stats.porcentajeSaludables}%`}
+                  icon={<TrendingUp className="w-6 h-6" />}
+                  color="green"
+                  positive
+                />
+                <StatCard 
+                  title={t('needs_attention')} 
+                  value={stats.necesitanAtencion.toString()} 
+                  change={t('check_now')} 
+                  icon={<AlertTriangle className="w-6 h-6" />}
+                  color="yellow"
+                />
+              </div>
+
+              {plantas.length === 0 ? (
+                <div className="bg-white dark:bg-gray-800 rounded-2xl p-12 text-center border-2 border-dashed border-gray-300 dark:border-gray-700">
+                  <Sprout className="w-16 h-16 mx-auto text-gray-400 mb-4" />
+                  <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">{t('no_plants')}</h3>
+                  <p className="text-gray-600 dark:text-gray-400 mb-4">{t('add_first')}</p>
+                  <button className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-xl font-medium">
+                    {t('add_new_plant')}
+                  </button>
+                </div>
+              ) : (
+                <div>
+                  <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">{t('your_plants')}</h2>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                    {plantas.map((planta) => (
+                      <PlantCard
+                        key={planta.id}
+                        planta={planta}
+                        onRegar={handleRegar}
+                        onClick={handleClickPlanta}
+                        t={t}
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+          {vistaActual !== 'dashboard' && (
+            <PlaceholderView 
+              icon={
+                vistaActual === 'mis-plantas' ? <Sprout className="w-20 h-20" /> :
+                vistaActual === 'calendario' ? <Calendar className="w-20 h-20" /> :
+                vistaActual === 'base-datos' ? <BookOpen className="w-20 h-20" /> :
+                <Settings className="w-20 h-20" />
+              }
+              title={t(vistaActual.replace('-', '_'))}
+              subtitle={t('view_in_development')}
             />
           )}
-          {vistaActual === 'mis-plantas' && <MisPlantasView />}
-          {vistaActual === 'calendario' && <CalendarioView />}
-          {vistaActual === 'base-datos' && <BaseDatosView />}
-          {vistaActual === 'configuracion' && <ConfiguracionView />}
         </main>
       </div>
-
-                  {/* Modal de detalle */}
-      {plantaSeleccionada && (
-        <PlantDetailModal
-          planta={plantaSeleccionada}
-          historial={historialCuidados}
-          onClose={() => setPlantaSeleccionada(null)}
-          onRegar={handleRegar}
-          onAgregarAccion={handleAgregarAccion}
-          onEliminarAccion={handleEliminarAccion}
-          onEditar={handleEditar}
-        />
-      )}
-      
     </div>
   );
 }
 
-// NavItem Component
-interface NavItemProps {
-  icon: React.ReactNode;
-  label: string;
-  active: boolean;
-  onClick: () => void;
-  collapsed: boolean;
-}
-
-function NavItem({ icon, label, active, onClick, collapsed }: NavItemProps) {
+function NavItem({ icon, label, active, onClick, collapsed }: any) {
   return (
     <button
       onClick={onClick}
@@ -313,107 +561,25 @@ function NavItem({ icon, label, active, onClick, collapsed }: NavItemProps) {
   );
 }
 
-// Dashboard View
-interface DashboardViewProps {
-  plantas: Planta[];
-  onRegar: (id: number) => void;
-  onEditar: (planta: Planta) => void;
-  onEliminar: (id: number) => void;
-  onClickPlanta: (planta: Planta) => void;
-}
+const colorClasses = {
+  green: 'bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400',
+  red: 'bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400',
+  yellow: 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-600 dark:text-yellow-400',
+  blue: 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400'
+} as const;
 
-function DashboardView({ plantas, onRegar, onEditar, onEliminar, onClickPlanta }: DashboardViewProps) {
-  const stats = calcularEstadisticas(plantas);
+type ColorKey = keyof typeof colorClasses; // 'green' | 'red' | 'yellow' | 'blue'
 
-  return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">My Plants Dashboard</h1>
-        <p className="text-gray-600 dark:text-gray-400">Welcome back, get an overview of your plants.</p>
-      </div>
-
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <StatCard 
-          title="Total Plants" 
-          value={stats.total.toString()} 
-          change="Active" 
-          icon={<Sprout className="w-6 h-6" />}
-          color="green"
-        />
-        <StatCard 
-          title="Needs Water" 
-          value={stats.necesitanRiego.toString()} 
-          change="Today" 
-          icon={<AlertTriangle className="w-6 h-6" />}
-          color="red"
-        />
-        <StatCard 
-          title="Healthy" 
-          value={stats.saludables.toString()} 
-          change={`${stats.porcentajeSaludables}%`}
-          icon={<TrendingUp className="w-6 h-6" />}
-          color="green"
-          positive
-        />
-        <StatCard 
-          title="Needs Attention" 
-          value={stats.necesitanAtencion.toString()} 
-          change="Check now" 
-          icon={<AlertTriangle className="w-6 h-6" />}
-          color="yellow"
-        />
-      </div>
-
-      {/* Plants Grid */}
-      {plantas.length === 0 ? (
-        <div className="bg-white dark:bg-gray-800 rounded-2xl p-12 text-center border-2 border-dashed border-gray-300 dark:border-gray-700">
-          <Sprout className="w-16 h-16 mx-auto text-gray-400 mb-4" />
-          <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">No plants yet</h3>
-          <p className="text-gray-600 dark:text-gray-400 mb-4">Add your first plant to get started</p>
-          <button className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-xl font-medium">
-            Add New Plant
-          </button>
-        </div>
-      ) : (
-        <div>
-          <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">Your Plants</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {plantas.map((planta) => (
-              <PlantCard
-                key={planta.id}
-                planta={planta}
-                onRegar={onRegar}
-                onEditar={onEditar}
-                onEliminar={onEliminar}
-                onClick={onClickPlanta}
-              />
-            ))}
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
-
-// Stat Card Component
 interface StatCardProps {
   title: string;
   value: string;
   change: string;
   icon: React.ReactNode;
-  color: 'green' | 'red' | 'yellow' | 'blue';
+  color: ColorKey;
   positive?: boolean;
 }
 
 function StatCard({ title, value, change, icon, color, positive }: StatCardProps) {
-  const colorClasses = {
-    green: 'bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400',
-    red: 'bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400',
-    yellow: 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-600 dark:text-yellow-400',
-    blue: 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400'
-  };
-
   return (
     <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 border border-gray-200 dark:border-gray-700">
       <div className="flex items-center justify-between mb-4">
@@ -430,32 +596,12 @@ function StatCard({ title, value, change, icon, color, positive }: StatCardProps
   );
 }
 
-// Placeholder Views
-function MisPlantasView() {
-  return <PlaceholderView icon={<Sprout className="w-20 h-20" />} title="Vista Mis Plantas" />;
-}
-
-function CalendarioView() {
-  return <PlaceholderView icon={<Calendar className="w-20 h-20" />} title="Vista Calendario" />;
-}
-
-function BaseDatosView() {
-  return <PlaceholderView icon={<BookOpen className="w-20 h-20" />} title="Base de Datos" />;
-}
-
-function ConfiguracionView() {
-  return <PlaceholderView icon={<Settings className="w-20 h-20" />} title="Configuración" />;
-}
-
-function PlaceholderView({ icon, title }: { icon: React.ReactNode; title: string }) {
+function PlaceholderView({ icon, title, subtitle }: any) {
   return (
     <div className="text-center py-20">
       <div className="mx-auto text-gray-400 mb-4">{icon}</div>
       <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">{title}</h2>
-      <p className="text-gray-600 dark:text-gray-400">En desarrollo...</p>
+      <p className="text-gray-600 dark:text-gray-400">{subtitle}</p>
     </div>
   );
 }
-
-
-

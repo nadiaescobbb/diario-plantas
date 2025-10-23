@@ -1,4 +1,6 @@
 {
+  "app_title": "Plant Diary",
+  "app_version": "v2.0 Pro",
   "dashboard": "Dashboard",
   "my_plants": "My Plants",
   "calendar": "Calendar",
@@ -14,5 +16,16 @@
   "needs_attention": "Needs Attention",
   "no_plants": "No plants yet",
   "add_first": "Add your first plant to get started",
-  "view_in_development": "In development..."
+  "view_in_development": "In development...",
+  "active": "Active",
+  "today": "Today",
+  "check_now": "Check now",
+  "your_plants": "Your Plants",
+  "search_placeholder": "Search for a plant...",
+  "confirm_delete": "Are you sure you want to delete this plant?",
+  "edit_in_dev": "Edit functionality in development. Plant: ",
+  "add_plant_dev": "Add plant in development",
+  "language": "Language",
+  "water": "Water",
+  "days_ago": "d ago"
 }
