@@ -1,0 +1,18 @@
+{
+  "dashboard": "Dashboard",
+  "my_plants": "My Plants",
+  "calendar": "Calendar",
+  "database": "Plant Database",
+  "settings": "Settings",
+  "help": "Help",
+  "add_new_plant": "Add New Plant",
+  "loading": "Loading...",
+  "welcome": "Welcome back, get an overview of your plants.",
+  "total_plants": "Total Plants",
+  "needs_water": "Needs Water",
+  "healthy": "Healthy",
+  "needs_attention": "Needs Attention",
+  "no_plants": "No plants yet",
+  "add_first": "Add your first plant to get started",
+  "view_in_development": "In development..."
+}

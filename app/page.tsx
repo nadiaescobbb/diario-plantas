@@ -15,6 +15,9 @@ import {
 } from './utils-completo';
 import PlantCard from './components/CardPlanta';
 import PlantDetailModal from './components/PlantDetailModal';
+import './i18n';
+import { useTranslation } from 'react-i18next';
+
 
 type Vista = 'dashboard' | 'mis-plantas' | 'calendario' | 'base-datos' | 'configuracion';
 
@@ -26,6 +29,13 @@ export default function DiariePlantasPro() {
   const [cargando, setCargando] = useState(true);
   const [plantaSeleccionada, setPlantaSeleccionada] = useState<Planta | null>(null);
   const [historialCuidados, setHistorialCuidados] = useState<AccionCuidado[]>([]);
+  const { t, i18n } = useTranslation();
+
+  const handleChangeLanguage = (lang: string) => {
+  i18n.changeLanguage(lang);
+  localStorage.setItem("lang", lang);
+};
+
   
   // Cargar plantas
   useEffect(() => {
