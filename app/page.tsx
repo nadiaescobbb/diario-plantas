@@ -7,7 +7,7 @@ import {
   TrendingUp, AlertTriangle, Globe
 } from 'lucide-react';
 
-// Mock de tipos (reemplaza con tus imports reales)
+
 interface Planta {
   id: number;
   nombre: string;
@@ -31,7 +31,7 @@ interface AccionCuidado {
 
 type Vista = 'dashboard' | 'mis-plantas' | 'calendario' | 'base-datos' | 'configuracion';
 
-// Mock de i18n simplificado (reemplaza con tu useTranslation real)
+
 const translations = {
   en: {
     app_title: "Plant Diary",
@@ -137,13 +137,14 @@ const calcularEstadisticas = (plantas: Planta[]) => {
   };
 };
 
+
 const PLANTAS_EJEMPLO: Omit<Planta, 'id'>[] = [
   {
     nombre: 'Monstera Deliciosa',
     nombreCientifico: 'Monstera deliciosa',
     tipo: 'Interior',
     ubicacion: 'Sala',
-    foto: '🌿',
+    foto: 'https://images.unsplash.com/photo-1614594975525-e45190c55d0b?w=300&h=300&fit=crop',
     frecuenciaRiego: 7,
     ultimoRiego: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
     estadoSalud: 'bueno',
@@ -154,7 +155,7 @@ const PLANTAS_EJEMPLO: Omit<Planta, 'id'>[] = [
     nombreCientifico: 'Epipremnum aureum',
     tipo: 'Interior',
     ubicacion: 'Oficina',
-    foto: '🍃',
+    foto: 'https://images.unsplash.com/photo-1632207691143-643e2a9a9361?w=300&h=300&fit=crop',
     frecuenciaRiego: 5,
     ultimoRiego: new Date(Date.now() - 8 * 24 * 60 * 60 * 1000).toISOString(),
     estadoSalud: 'necesita-atencion',
@@ -165,7 +166,7 @@ const PLANTAS_EJEMPLO: Omit<Planta, 'id'>[] = [
     nombreCientifico: 'Echeveria sp.',
     tipo: 'Suculenta',
     ubicacion: 'Ventana',
-    foto: '🌵',
+    foto: 'https://images.unsplash.com/photo-1459156212016-c812468e2115?w=300&h=300&fit=crop',
     frecuenciaRiego: 14,
     ultimoRiego: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
     estadoSalud: 'excelente',
