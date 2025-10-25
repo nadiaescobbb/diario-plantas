@@ -7,8 +7,8 @@ import {
   TrendingUp, AlertTriangle, Globe
 } from 'lucide-react';
 
-
-interface Planta {
+// Tipos
+export interface Planta {
   id: number;
   nombre: string;
   nombreCientifico: string;
@@ -21,17 +21,9 @@ interface Planta {
   notas: string;
 }
 
-interface AccionCuidado {
-  id: number;
-  plantaId: number;
-  tipo: 'riego' | 'fertilizante' | 'poda' | 'trasplante' | 'nota';
-  fecha: string;
-  notas?: string;
-}
-
 type Vista = 'dashboard' | 'mis-plantas' | 'calendario' | 'base-datos' | 'configuracion';
 
-
+// Traducciones
 const translations = {
   en: {
     app_title: "Plant Diary",
@@ -97,7 +89,7 @@ const translations = {
   }
 };
 
-// Utilidades mock
+// Utilidades
 const generarId = () => Math.floor(Math.random() * 1000000);
 
 const determinarEstadoSalud = (planta: Planta): Planta['estadoSalud'] => {
@@ -137,7 +129,7 @@ const calcularEstadisticas = (plantas: Planta[]) => {
   };
 };
 
-
+// Ejemplo de plantas
 const PLANTAS_EJEMPLO: Omit<Planta, 'id'>[] = [
   {
     nombre: 'Monstera Deliciosa',
@@ -174,7 +166,20 @@ const PLANTAS_EJEMPLO: Omit<Planta, 'id'>[] = [
   }
 ];
 
-// Componente PlantCard
+// Colores para tarjetas
+const colorClasses = {
+  green: 'bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400',
+  red: 'bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400',
+  yellow: 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-600 dark:text-yellow-400',
+  blue: 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400'
+} as const;
+
+type ColorKey = keyof typeof colorClasses;
+
+// ====================
+// COMPONENTES
+// ====================
+
 interface PlantCardProps {
   planta: Planta;
   onRegar: (id: number) => void;
@@ -200,7 +205,7 @@ function PlantCard({ planta, onRegar, onClick, t }: PlantCardProps) {
       className="bg-white dark:bg-gray-800 rounded-2xl p-5 border border-gray-200 dark:border-gray-700 hover:shadow-lg transition-all cursor-pointer"
     >
       <div className="flex items-start justify-between mb-4">
-        <div className="text-4xl">{planta.foto}</div>
+        <img src={planta.foto} alt={planta.nombre} className="w-20 h-20 object-cover rounded-lg"/>
         <span className={`px-2 py-1 rounded-lg text-xs font-medium ${estadoColors[planta.estadoSalud]}`}>
           {planta.estadoSalud}
         </span>
@@ -226,350 +231,6 @@ function PlantCard({ planta, onRegar, onClick, t }: PlantCardProps) {
     </div>
   );
 }
-
-// Componente Principal
-export default function DiariePlantasPro() {
-  const [vistaActual, setVistaActual] = useState<Vista>('dashboard');
-  const [darkMode, setDarkMode] = useState(false);
-  const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [plantas, setPlantas] = useState<Planta[]>([]);
-  const [cargando, setCargando] = useState(true);
-  const [lang, setLang] = useState<'en' | 'es'>('es');
-  const [showLangMenu, setShowLangMenu] = useState(false);
-
-  // Función de traducción
-  const t = (key: string) => translations[lang][key as keyof typeof translations.en] || key;
-
-  useEffect(() => {
-    const savedLang = localStorage.getItem('lang') as 'en' | 'es' || 'es';
-    const plantasGuardadas = localStorage.getItem('plantas-pro');
-    const modoOscuro = localStorage.getItem('darkMode') === 'true';
-    
-    setLang(savedLang);
-    
-    if (plantasGuardadas) {
-      setPlantas(JSON.parse(plantasGuardadas));
-    } else {
-      const plantasConId = PLANTAS_EJEMPLO.map(p => ({ ...p, id: generarId() }));
-      setPlantas(plantasConId);
-      localStorage.setItem('plantas-pro', JSON.stringify(plantasConId));
-    }
-    
-    setDarkMode(modoOscuro);
-    if (modoOscuro) {
-      document.documentElement.classList.add('dark');
-    }
-    setCargando(false);
-  }, []);
-
-  useEffect(() => {
-    if (!cargando && plantas.length >= 0) {
-      localStorage.setItem('plantas-pro', JSON.stringify(plantas));
-    }
-  }, [plantas, cargando]);
-
-  const toggleDarkMode = () => {
-    setDarkMode(!darkMode);
-    localStorage.setItem('darkMode', String(!darkMode));
-    document.documentElement.classList.toggle('dark');
-  };
-
-  const handleChangeLanguage = (newLang: 'en' | 'es') => {
-    setLang(newLang);
-    localStorage.setItem('lang', newLang);
-    setShowLangMenu(false);
-  };
-
-  const handleRegar = (id: number) => {
-    setPlantas(plantas.map(p => {
-      if (p.id === id) {
-        return {
-          ...p,
-          ultimoRiego: new Date().toISOString(),
-          estadoSalud: determinarEstadoSalud({ ...p, ultimoRiego: new Date().toISOString() })
-        };
-      }
-      return p;
-    }));
-  };
-
-  const handleEliminar = (id: number) => {
-    if (window.confirm(t('confirm_delete'))) {
-      setPlantas(plantas.filter(p => p.id !== id));
-    }
-  };
-
-  const handleEditar = (planta: Planta) => {
-    alert(t('edit_in_dev') + planta.nombre);
-  };
-
-  const handleClickPlanta = (planta: Planta) => {
-    console.log('Planta seleccionada:', planta);
-  };
-
-  if (cargando) {
-    return (
-      <div className="flex h-screen items-center justify-center bg-gray-50 dark:bg-gray-900">
-        <div className="text-center">
-          <Sprout className="w-16 h-16 mx-auto text-green-600 animate-pulse mb-4" />
-          <p className="text-gray-600 dark:text-gray-400">{t('loading')}</p>
-        </div>
-      </div>
-    );
-  }
-
-  const stats = calcularEstadisticas(plantas);
-
-  return (
-    <div className="flex h-screen bg-gray-50 dark:bg-gray-900 overflow-hidden">
-      {/* SIDEBAR */}
-      <aside className={`${sidebarOpen ? 'w-64' : 'w-20'} bg-[#2d5016] dark:bg-gray-800 text-white transition-all duration-300 flex flex-col`}>
-        <div className="p-6 border-b border-white/10">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center flex-shrink-0">
-              <Sprout className="w-6 h-6 text-[#2d5016]" />
-            </div>
-            {sidebarOpen && (
-              <div>
-                <h1 className="font-bold text-lg">{t('app_title')}</h1>
-                <p className="text-xs text-white/60">{t('app_version')}</p>
-              </div>
-            )}
-          </div>
-        </div>
-
-        <nav className="flex-1 p-4 space-y-2">
-          <NavItem
-            icon={<Home className="w-5 h-5" />}
-            label={t('dashboard')}
-            active={vistaActual === 'dashboard'}
-            onClick={() => setVistaActual('dashboard')}
-            collapsed={!sidebarOpen}
-          />
-          <NavItem
-            icon={<Sprout className="w-5 h-5" />}
-            label={t('my_plants')}
-            active={vistaActual === 'mis-plantas'}
-            onClick={() => setVistaActual('mis-plantas')}
-            collapsed={!sidebarOpen}
-          />
-          <NavItem
-            icon={<Calendar className="w-5 h-5" />}
-            label={t('calendar')}
-            active={vistaActual === 'calendario'}
-            onClick={() => setVistaActual('calendario')}
-            collapsed={!sidebarOpen}
-          />
-          <NavItem
-            icon={<BookOpen className="w-5 h-5" />}
-            label={t('database')}
-            active={vistaActual === 'base-datos'}
-            onClick={() => setVistaActual('base-datos')}
-            collapsed={!sidebarOpen}
-          />
-          
-          <div className="pt-4 border-t border-white/10 mt-4">
-            <NavItem
-              icon={<Settings className="w-5 h-5" />}
-              label={t('settings')}
-              active={vistaActual === 'configuracion'}
-              onClick={() => setVistaActual('configuracion')}
-              collapsed={!sidebarOpen}
-            />
-            <NavItem
-              icon={<HelpCircle className="w-5 h-5" />}
-              label={t('help')}
-              active={false}
-              onClick={() => {}}
-              collapsed={!sidebarOpen}
-            />
-          </div>
-        </nav>
-
-        <div className="p-4 border-t border-white/10">
-          <button 
-            onClick={() => alert(t('add_plant_dev'))}
-            className="w-full bg-green-600 hover:bg-green-700 text-white py-3 rounded-xl font-medium transition-all flex items-center justify-center gap-2"
-          >
-            <Plus className="w-5 h-5" />
-            {sidebarOpen && <span>{t('add_new_plant')}</span>}
-          </button>
-        </div>
-      </aside>
-
-      {/* MAIN CONTENT */}
-      <div className="flex-1 flex flex-col overflow-hidden">
-        <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4 flex-1 max-w-xl">
-              <button onClick={() => setSidebarOpen(!sidebarOpen)} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg">
-                <LayoutGrid className="w-5 h-5 text-gray-600 dark:text-gray-400" />
-              </button>
-              <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                <input
-                  type="text"
-                  placeholder={t('search_placeholder')}
-                  className="w-full pl-10 pr-4 py-2 bg-gray-100 dark:bg-gray-700 border-0 rounded-lg text-gray-900 dark:text-white focus:ring-2 focus:ring-green-500 outline-none"
-                />
-              </div>
-            </div>
-
-            <div className="flex items-center gap-3">
-              {/* Language Selector */}
-              <div className="relative">
-                <button 
-                  onClick={() => setShowLangMenu(!showLangMenu)}
-                  className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg flex items-center gap-2"
-                >
-                  <Globe className="w-5 h-5 text-gray-600 dark:text-gray-400" />
-                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300 uppercase">{lang}</span>
-                </button>
-                {showLangMenu && (
-                  <div className="absolute right-0 mt-2 w-40 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 py-1 z-50">
-                    <button
-                      onClick={() => handleChangeLanguage('es')}
-                      className={`w-full px-4 py-2 text-left text-sm hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2 ${lang === 'es' ? 'bg-gray-50 dark:bg-gray-700' : ''}`}
-                    >
-                      🇪🇸 Español
-                    </button>
-                    <button
-                      onClick={() => handleChangeLanguage('en')}
-                      className={`w-full px-4 py-2 text-left text-sm hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2 ${lang === 'en' ? 'bg-gray-50 dark:bg-gray-700' : ''}`}
-                    >
-                      🇬🇧 English
-                    </button>
-                  </div>
-                )}
-              </div>
-              
-              <button className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg relative">
-                <Bell className="w-5 h-5 text-gray-600 dark:text-gray-400" />
-                <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
-              </button>
-              <button onClick={toggleDarkMode} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg">
-                {darkMode ? <Sun className="w-5 h-5 text-yellow-400" /> : <Moon className="w-5 h-5 text-gray-600" />}
-              </button>
-              <div className="w-px h-6 bg-gray-300 dark:bg-gray-600"></div>
-              <button className="flex items-center gap-2 hover:bg-gray-100 dark:hover:bg-gray-700 px-3 py-2 rounded-lg">
-                <div className="w-8 h-8 bg-gradient-to-br from-green-400 to-emerald-500 rounded-full flex items-center justify-center">
-                  <User className="w-5 h-5 text-white" />
-                </div>
-              </button>
-            </div>
-          </div>
-        </header>
-
-        <main className="flex-1 overflow-y-auto p-6">
-          {vistaActual === 'dashboard' && (
-            <div className="space-y-6">
-              <div>
-                <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
-                  {t('my_plants')} {t('dashboard')}
-                </h1>
-                <p className="text-gray-600 dark:text-gray-400">{t('welcome')}</p>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                <StatCard 
-                  title={t('total_plants')} 
-                  value={stats.total.toString()} 
-                  change={t('active')} 
-                  icon={<Sprout className="w-6 h-6" />}
-                  color="green"
-                />
-                <StatCard 
-                  title={t('needs_water')} 
-                  value={stats.necesitanRiego.toString()} 
-                  change={t('today')} 
-                  icon={<AlertTriangle className="w-6 h-6" />}
-                  color="red"
-                />
-                <StatCard 
-                  title={t('healthy')} 
-                  value={stats.saludables.toString()} 
-                  change={`${stats.porcentajeSaludables}%`}
-                  icon={<TrendingUp className="w-6 h-6" />}
-                  color="green"
-                  positive
-                />
-                <StatCard 
-                  title={t('needs_attention')} 
-                  value={stats.necesitanAtencion.toString()} 
-                  change={t('check_now')} 
-                  icon={<AlertTriangle className="w-6 h-6" />}
-                  color="yellow"
-                />
-              </div>
-
-              {plantas.length === 0 ? (
-                <div className="bg-white dark:bg-gray-800 rounded-2xl p-12 text-center border-2 border-dashed border-gray-300 dark:border-gray-700">
-                  <Sprout className="w-16 h-16 mx-auto text-gray-400 mb-4" />
-                  <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">{t('no_plants')}</h3>
-                  <p className="text-gray-600 dark:text-gray-400 mb-4">{t('add_first')}</p>
-                  <button className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-xl font-medium">
-                    {t('add_new_plant')}
-                  </button>
-                </div>
-              ) : (
-                <div>
-                  <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">{t('your_plants')}</h2>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                    {plantas.map((planta) => (
-                      <PlantCard
-                        key={planta.id}
-                        planta={planta}
-                        onRegar={handleRegar}
-                        onClick={handleClickPlanta}
-                        t={t}
-                      />
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
-          {vistaActual !== 'dashboard' && (
-            <PlaceholderView 
-              icon={
-                vistaActual === 'mis-plantas' ? <Sprout className="w-20 h-20" /> :
-                vistaActual === 'calendario' ? <Calendar className="w-20 h-20" /> :
-                vistaActual === 'base-datos' ? <BookOpen className="w-20 h-20" /> :
-                <Settings className="w-20 h-20" />
-              }
-              title={t(vistaActual.replace('-', '_'))}
-              subtitle={t('view_in_development')}
-            />
-          )}
-        </main>
-      </div>
-    </div>
-  );
-}
-
-function NavItem({ icon, label, active, onClick, collapsed }: any) {
-  return (
-    <button
-      onClick={onClick}
-      className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
-        active ? 'bg-white/10 text-white' : 'text-white/70 hover:bg-white/5 hover:text-white'
-      }`}
-      title={collapsed ? label : undefined}
-    >
-      {icon}
-      {!collapsed && <span className="font-medium">{label}</span>}
-    </button>
-  );
-}
-
-const colorClasses = {
-  green: 'bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400',
-  red: 'bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400',
-  yellow: 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-600 dark:text-yellow-400',
-  blue: 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400'
-} as const;
-
-type ColorKey = keyof typeof colorClasses; // 'green' | 'red' | 'yellow' | 'blue'
 
 interface StatCardProps {
   title: string;
@@ -597,12 +258,164 @@ function StatCard({ title, value, change, icon, color, positive }: StatCardProps
   );
 }
 
+function NavItem({ icon, label, active, onClick, collapsed }: any) {
+  return (
+    <button
+      onClick={onClick}
+      className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
+        active ? 'bg-white/10 text-white' : 'text-white/70 hover:bg-white/5 hover:text-white'
+      }`}
+      title={collapsed ? label : undefined}
+    >
+      {icon}
+      {!collapsed && <span className="font-medium">{label}</span>}
+    </button>
+  );
+}
+
 function PlaceholderView({ icon, title, subtitle }: any) {
   return (
     <div className="text-center py-20">
       <div className="mx-auto text-gray-400 mb-4">{icon}</div>
       <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">{title}</h2>
       <p className="text-gray-600 dark:text-gray-400">{subtitle}</p>
+    </div>
+  );
+}
+
+// ====================
+// COMPONENTE PRINCIPAL
+// ====================
+
+export default function DiariePlantasPro() {
+  const [vistaActual, setVistaActual] = useState<Vista>('dashboard');
+  const [darkMode, setDarkMode] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [plantas, setPlantas] = useState<Planta[]>([]);
+  const [cargando, setCargando] = useState(true);
+  const [lang, setLang] = useState<'en' | 'es'>('es');
+  const [showLangMenu, setShowLangMenu] = useState(false);
+
+  const t = (key: string) => translations[lang][key as keyof typeof translations.en] ?? key;
+
+  useEffect(() => {
+    const savedLang = (localStorage.getItem('lang') as 'en' | 'es') || 'es';
+    const plantasGuardadas = localStorage.getItem('plantas-pro');
+    const modoOscuro = localStorage.getItem('darkMode') === 'true';
+    
+    setLang(savedLang);
+    
+    if (plantasGuardadas) {
+      setPlantas(JSON.parse(plantasGuardadas));
+    } else {
+      const plantasConId = PLANTAS_EJEMPLO.map(p => ({ ...p, id: generarId() }));
+      setPlantas(plantasConId);
+      localStorage.setItem('plantas-pro', JSON.stringify(plantasConId));
+    }
+    
+    setDarkMode(modoOscuro);
+    if (modoOscuro) {
+      document.documentElement.classList.add('dark');
+    }
+    setCargando(false);
+  }, []);
+
+  useEffect(() => {
+    if (!cargando) localStorage.setItem('plantas-pro', JSON.stringify(plantas));
+  }, [plantas, cargando]);
+
+  const toggleDarkMode = () => {
+    setDarkMode(!darkMode);
+    localStorage.setItem('darkMode', String(!darkMode));
+    document.documentElement.classList.toggle('dark');
+  };
+
+  const handleChangeLanguage = (newLang: 'en' | 'es') => {
+    setLang(newLang);
+    localStorage.setItem('lang', newLang);
+    setShowLangMenu(false);
+  };
+
+  const handleRegar = (id: number) => {
+    setPlantas(plantas.map(p => {
+      if (p.id === id) {
+        const updated = { ...p, ultimoRiego: new Date().toISOString() };
+        return { ...updated, estadoSalud: determinarEstadoSalud(updated) };
+      }
+      return p;
+    }));
+  };
+
+  const handleEliminar = (id: number) => {
+    if (window.confirm(t('confirm_delete'))) {
+      setPlantas(plantas.filter(p => p.id !== id));
+    }
+  };
+
+  const handleClickPlanta = (planta: Planta) => {
+    console.log('Planta seleccionada:', planta);
+  };
+
+  if (cargando) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-gray-50 dark:bg-gray-900">
+        <div className="text-center">
+          <Sprout className="w-16 h-16 mx-auto text-green-600 animate-pulse mb-4" />
+          <p className="text-gray-600 dark:text-gray-400">{t('loading')}</p>
+        </div>
+      </div>
+    );
+  }
+
+  const stats = calcularEstadisticas(plantas);
+
+  return (
+    <div className="flex h-screen bg-gray-50 dark:bg-gray-900 overflow-hidden">
+      {/* SIDEBAR */}
+      <aside className={`${sidebarOpen ? 'w-64' : 'w-20'} bg-[#2d5016] dark:bg-gray-800 text-white transition-all duration-300 flex flex-col`}>
+        {/* ... aquí va todo tu código de sidebar y nav items ... */}
+      </aside>
+
+      {/* MAIN CONTENT */}
+      <div className="flex-1 flex flex-col overflow-hidden">
+        {/* HEADER */}
+        {/* ... código de header ... */}
+
+        <main className="flex-1 overflow-y-auto p-6">
+          {vistaActual === 'dashboard' ? (
+            <div className="space-y-6">
+              {/* Estadísticas */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <StatCard title={t('total_plants')} value={stats.total.toString()} change={t('active')} icon={<Sprout className="w-6 h-6" />} color="green" />
+                <StatCard title={t('needs_water')} value={stats.necesitanRiego.toString()} change={t('today')} icon={<AlertTriangle className="w-6 h-6" />} color="red" />
+                <StatCard title={t('healthy')} value={stats.saludables.toString()} change={`${stats.porcentajeSaludables}%`} icon={<TrendingUp className="w-6 h-6" />} color="green" positive />
+                <StatCard title={t('needs_attention')} value={stats.necesitanAtencion.toString()} change={t('check_now')} icon={<AlertTriangle className="w-6 h-6" />} color="yellow" />
+              </div>
+
+              {/* Plantas */}
+              {plantas.length === 0 ? (
+                <div className="bg-white dark:bg-gray-800 rounded-2xl p-12 text-center border-2 border-dashed border-gray-300 dark:border-gray-700">
+                  <Sprout className="w-16 h-16 mx-auto text-gray-400 mb-4" />
+                  <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">{t('no_plants')}</h3>
+                  <p className="text-gray-600 dark:text-gray-400 mb-4">{t('add_first')}</p>
+                  <button className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-xl font-medium">{t('add_new_plant')}</button>
+                </div>
+              ) : (
+                <div>
+                  <h2 className="text-2xl font-bold mb-4 text-gray-900 dark:text-white">{t('your_plants')}</h2>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {plantas.map(p => (
+                      <PlantCard key={p.id} planta={p} onRegar={handleRegar} onClick={handleClickPlanta} t={t} />
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          ) : (
+            <PlaceholderView icon={<BookOpen className="w-16 h-16 mx-auto text-gray-400 mb-4" />} title={t('view_in_development')} subtitle={t('view_in_development')} />
+          )}
+        </main>
+      </div>
     </div>
   );
 }
