@@ -2,13 +2,13 @@
 
 import React from 'react';
 import { Droplet, Edit2, Trash2, MapPin, Calendar as CalendarIcon } from 'lucide-react';
-import { Planta } from '../types-completo';
+import { Planta } from '../lib/types';
 import { 
   calcularDiasParaRiego, 
   obtenerEstadoRiego, 
   obtenerBadgeEstadoSalud,
   formatearFecha 
-} from '../utils-completo';
+} from '../lib/utils';
 
 interface PlantCardProps {
   planta: Planta;

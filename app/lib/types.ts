@@ -1,8 +1,8 @@
 // ============================================
-// TIPOS COMPLETOS PARA DIARIO DE PLANTAS PRO
+// TIPOS CONSOLIDADOS - DIARIO DE PLANTAS
 // ============================================
 
-// Planta con información completa
+// ===== PLANTA =====
 export interface Planta {
   id: number;
   nombre: string;
@@ -28,7 +28,7 @@ export interface Planta {
   ultimaRevision?: string;
 }
 
-// Historial de acciones
+// ===== HISTORIAL DE ACCIONES =====
 export interface AccionCuidado {
   id: number;
   plantaId: number;
@@ -47,6 +47,7 @@ export type TipoAccion =
   | 'movimiento'
   | 'revision';
 
+// ===== TIPOS DE PLANTA =====
 export type TipoPlanta = 
   | 'Monstera'
   | 'Ficus'
@@ -62,6 +63,23 @@ export type TipoPlanta =
   | 'Palm'
   | 'Other';
 
+export const TIPOS_PLANTA: TipoPlanta[] = [
+  'Monstera',
+  'Ficus',
+  'Pothos',
+  'Snake Plant',
+  'ZZ Plant',
+  'Philodendron',
+  'Calathea',
+  'Succulent',
+  'Cactus',
+  'Orchid',
+  'Fern',
+  'Palm',
+  'Other'
+];
+
+// ===== ESTADOS =====
 export type EstadoSalud = 
   | 'healthy' 
   | 'needs-attention' 
@@ -78,7 +96,7 @@ export type NivelHumedad =
   | 'medium' 
   | 'high';
 
-// Enfermedades y plagas
+// ===== ENFERMEDADES Y PLAGAS =====
 export interface Enfermedad {
   id: string;
   nombre: string;
@@ -91,7 +109,7 @@ export interface Enfermedad {
   severidad: 'low' | 'medium' | 'high';
 }
 
-// Recordatorio
+// ===== RECORDATORIOS =====
 export interface Recordatorio {
   id: number;
   plantaId: number;
@@ -101,7 +119,7 @@ export interface Recordatorio {
   notas?: string;
 }
 
-// Configuración de notificaciones
+// ===== CONFIGURACIÓN =====
 export interface ConfigNotificaciones {
   habilitadas: boolean;
   tipo: 'email' | 'push' | 'sms';
@@ -109,18 +127,17 @@ export interface ConfigNotificaciones {
   diasAntes: number;
 }
 
-// Vista actual de la app
 export type Vista = 
+  | 'landing'
   | 'dashboard' 
   | 'mis-plantas' 
   | 'calendario' 
   | 'base-datos'
-  | 'configuracion'
-  | 'detalle-planta';
+  | 'configuracion';
 
-// Configuración general
+// ===== CONFIGURACIÓN DE LA APP =====
 export const CONFIG = {
-  appName: "Diario de Plantas",
+  appName: "Plant Diary",
   version: "2.0.0",
   colors: {
     primary: "#2d5016",
@@ -132,7 +149,7 @@ export const CONFIG = {
   }
 };
 
-// Datos de ejemplo para enfermedades
+// ===== BASE DE DATOS DE ENFERMEDADES =====
 export const ENFERMEDADES_COMUNES: Enfermedad[] = [
   {
     id: 'powdery-mildew',

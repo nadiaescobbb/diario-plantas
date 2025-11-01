@@ -1,7 +1,9 @@
+'use client';
+
 import React from 'react';
 import { Sprout, Droplet } from 'lucide-react';
-import { Planta } from '../types';
-import { calcularDiasParaRiego } from '../utils';
+import { Planta } from '../lib/types';
+import { calcularDiasParaRiego } from '../lib/utils';
 
 interface VistaCalendarioProps {
   plantas: Planta[];

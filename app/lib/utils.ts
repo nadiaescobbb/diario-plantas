@@ -1,10 +1,11 @@
 // ============================================
-// UTILIDADES COMPLETAS
+// UTILIDADES CONSOLIDADAS - DIARIO DE PLANTAS
 // ============================================
 
-import { Planta, EstadoSalud, AccionCuidado } from './types-completo';
+import { Planta, EstadoSalud, AccionCuidado } from './types';
 
-// Calcular días hasta próximo riego
+// ===== CÁLCULOS DE RIEGO =====
+
 export const calcularDiasParaRiego = (
   ultimoRiego: string, 
   frecuencia: number
@@ -16,7 +17,6 @@ export const calcularDiasParaRiego = (
   return Math.max(0, frecuencia - diff);
 };
 
-// Obtener estado de riego con colores
 export const obtenerEstadoRiego = (dias: number) => {
   if (dias === 0) {
     return { 
@@ -50,10 +50,9 @@ export const obtenerEstadoRiego = (dias: number) => {
   };
 };
 
-// Determinar estado de salud de la planta
-export const determinarEstadoSalud = (
-  planta: Planta
-): EstadoSalud => {
+// ===== ESTADO DE SALUD =====
+
+export const determinarEstadoSalud = (planta: Planta): EstadoSalud => {
   const diasParaRiego = calcularDiasParaRiego(planta.ultimoRiego, planta.frecuenciaRiego);
   
   // Si necesita riego urgente
@@ -69,7 +68,6 @@ export const determinarEstadoSalud = (
   return 'healthy';
 };
 
-// Obtener badge de estado de salud
 export const obtenerBadgeEstadoSalud = (estado: EstadoSalud) => {
   switch (estado) {
     case 'healthy':
@@ -96,7 +94,8 @@ export const obtenerBadgeEstadoSalud = (estado: EstadoSalud) => {
   }
 };
 
-// Calcular estadísticas del dashboard
+// ===== ESTADÍSTICAS =====
+
 export const calcularEstadisticas = (plantas: Planta[]) => {
   const total = plantas.length;
   const necesitanRiego = plantas.filter(p => 
@@ -119,7 +118,8 @@ export const calcularEstadisticas = (plantas: Planta[]) => {
   };
 };
 
-// Formatear fecha
+// ===== FORMATEO DE FECHAS =====
+
 export const formatearFecha = (fecha: string): string => {
   const date = new Date(fecha);
   const hoy = new Date();
@@ -152,7 +152,8 @@ export const formatearFecha = (fecha: string): string => {
   return date.toLocaleDateString();
 };
 
-// Obtener ícono según tipo de acción
+// ===== ICONOS Y VISUALES =====
+
 export const obtenerIconoAccion = (tipo: string) => {
   const iconos: Record<string, string> = {
     riego: '💧',
@@ -166,14 +167,14 @@ export const obtenerIconoAccion = (tipo: string) => {
   return iconos[tipo] || '📝';
 };
 
-// Obtener plantas que necesitan riego hoy
+// ===== FILTROS Y BÚSQUEDAS =====
+
 export const obtenerPlantasParaRegarHoy = (plantas: Planta[]): Planta[] => {
   return plantas.filter(p => 
     calcularDiasParaRiego(p.ultimoRiego, p.frecuenciaRiego) === 0
   );
 };
 
-// Obtener próximos cuidados (ordenados por urgencia)
 export const obtenerProximosCuidados = (plantas: Planta[]): Planta[] => {
   return [...plantas]
     .map(p => ({
@@ -183,12 +184,26 @@ export const obtenerProximosCuidados = (plantas: Planta[]): Planta[] => {
     .sort((a, b) => a.diasParaRiego - b.diasParaRiego);
 };
 
-// Generar ID único
+export const filtrarPlantas = (plantas: Planta[], busqueda: string): Planta[] => {
+  if (!busqueda.trim()) return plantas;
+  
+  const termino = busqueda.toLowerCase().trim();
+  return plantas.filter(p => 
+    p.nombre.toLowerCase().includes(termino) ||
+    p.nombreCientifico?.toLowerCase().includes(termino) ||
+    p.tipo.toLowerCase().includes(termino) ||
+    p.ubicacion.toLowerCase().includes(termino)
+  );
+};
+
+// ===== GENERADORES =====
+
 export const generarId = (): number => {
   return Date.now() + Math.floor(Math.random() * 1000);
 };
 
-// Validar URL de imagen
+// ===== VALIDACIONES =====
+
 export const esUrlValida = (url: string): boolean => {
   try {
     new URL(url);
@@ -198,7 +213,64 @@ export const esUrlValida = (url: string): boolean => {
   }
 };
 
-// Plantas de ejemplo para demo
+export const validarPlanta = (planta: Partial<Planta>): string[] => {
+  const errores: string[] = [];
+  
+  if (!planta.nombre?.trim()) {
+    errores.push('Plant name is required');
+  }
+  
+  if (planta.frecuenciaRiego && planta.frecuenciaRiego < 1) {
+    errores.push('Watering frequency must be at least 1 day');
+  }
+  
+  if (planta.foto && !planta.foto.startsWith('data:') && !esUrlValida(planta.foto)) {
+    errores.push('Invalid image URL');
+  }
+  
+  return errores;
+};
+
+// ===== ALMACENAMIENTO LOCAL =====
+
+export const guardarPlantas = (plantas: Planta[]): void => {
+  try {
+    localStorage.setItem('plantas-pro', JSON.stringify(plantas));
+  } catch (error) {
+    console.error('Error saving plants:', error);
+  }
+};
+
+export const cargarPlantas = (): Planta[] => {
+  try {
+    const data = localStorage.getItem('plantas-pro');
+    return data ? JSON.parse(data) : [];
+  } catch (error) {
+    console.error('Error loading plants:', error);
+    return [];
+  }
+};
+
+export const guardarHistorial = (historial: AccionCuidado[]): void => {
+  try {
+    localStorage.setItem('historial-cuidados', JSON.stringify(historial));
+  } catch (error) {
+    console.error('Error saving history:', error);
+  }
+};
+
+export const cargarHistorial = (): AccionCuidado[] => {
+  try {
+    const data = localStorage.getItem('historial-cuidados');
+    return data ? JSON.parse(data) : [];
+  } catch (error) {
+    console.error('Error loading history:', error);
+    return [];
+  }
+};
+
+// ===== PLANTAS DE EJEMPLO =====
+
 export const PLANTAS_EJEMPLO: Omit<Planta, 'id'>[] = [
   {
     nombre: 'Monstera Deliciosa',

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { X } from 'lucide-react';
-import { Planta, TIPOS_PLANTA } from '../types';
+import { Planta, TIPOS_PLANTA } from '../lib/types';
 
 interface ModalPlantaProps {
   planta: Planta | null;
