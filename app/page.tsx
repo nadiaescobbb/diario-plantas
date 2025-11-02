@@ -4,24 +4,26 @@ import React, { useState, useEffect } from 'react';
 import { 
   LayoutGrid, Sprout, Calendar, BookOpen, Settings, 
   HelpCircle, Plus, Search, Sun, Moon, User, Bell, Home,
-  TrendingUp, AlertTriangle, Globe
+  TrendingUp, AlertTriangle, Globe, Menu, X
 } from 'lucide-react';
 
-// Tipos
-export interface Planta {
-  id: number;
-  nombre: string;
-  nombreCientifico: string;
-  tipo: string;
-  ubicacion: string;
-  foto: string;
-  frecuenciaRiego: number;
-  ultimoRiego: string;
-  estadoSalud: 'excelente' | 'bueno' | 'necesita-atencion' | 'critico';
-  notas: string;
-}
+// Importar tipos y utilidades
+import { Planta, Vista, PLANTAS_EJEMPLO } from './lib/types';
+import { 
+  calcularEstadisticas, 
+  guardarPlantas, 
+  cargarPlantas,
+  generarId,
+  calcularDiasParaRiego,
+  obtenerEstadoRiego,
+  filtrarPlantas
+} from './lib/utils';
 
-type Vista = 'dashboard' | 'mis-plantas' | 'calendario' | 'base-datos' | 'configuracion';
+// Importar componentes
+import PlantCard from './components/CardPlanta';
+import PlantDetailModal from './components/PlantDetailModal';
+import VistaCalendario from './components/VistaCalendario';
+import Landing from './components/Landing';
 
 // Traducciones
 const translations = {
@@ -50,11 +52,10 @@ const translations = {
     your_plants: "Your Plants",
     search_placeholder: "Search for a plant...",
     confirm_delete: "Are you sure you want to delete this plant?",
-    edit_in_dev: "Edit functionality in development. Plant: ",
-    add_plant_dev: "Add plant in development",
     language: "Language",
-    water: "Water",
-    days_ago: "d ago"
+    toggle_sidebar: "Toggle Sidebar",
+    notifications: "Notifications",
+    profile: "Profile"
   },
   es: {
     app_title: "Diario de Plantas",
@@ -81,92 +82,14 @@ const translations = {
     your_plants: "Tus Plantas",
     search_placeholder: "Buscar una planta...",
     confirm_delete: "¿Estás seguro de que deseas eliminar esta planta?",
-    edit_in_dev: "Editar funcionalidad en desarrollo. Planta: ",
-    add_plant_dev: "Agregar planta en desarrollo",
     language: "Idioma",
-    water: "Regar",
-    days_ago: "d atrás"
+    toggle_sidebar: "Alternar Menú",
+    notifications: "Notificaciones",
+    profile: "Perfil"
   }
 };
 
-// Utilidades
-const generarId = () => Math.floor(Math.random() * 1000000);
-
-const determinarEstadoSalud = (planta: Planta): Planta['estadoSalud'] => {
-  const diasSinRiego = Math.floor(
-    (new Date().getTime() - new Date(planta.ultimoRiego).getTime()) / (1000 * 60 * 60 * 24)
-  );
-  
-  if (diasSinRiego > planta.frecuenciaRiego * 1.5) return 'critico';
-  if (diasSinRiego > planta.frecuenciaRiego) return 'necesita-atencion';
-  if (diasSinRiego > planta.frecuenciaRiego * 0.7) return 'bueno';
-  return 'excelente';
-};
-
-const calcularEstadisticas = (plantas: Planta[]) => {
-  const total = plantas.length;
-  const necesitanRiego = plantas.filter(p => {
-    const dias = Math.floor(
-      (new Date().getTime() - new Date(p.ultimoRiego).getTime()) / (1000 * 60 * 60 * 24)
-    );
-    return dias >= p.frecuenciaRiego;
-  }).length;
-  
-  const saludables = plantas.filter(p => 
-    p.estadoSalud === 'excelente' || p.estadoSalud === 'bueno'
-  ).length;
-  
-  const necesitanAtencion = plantas.filter(p => 
-    p.estadoSalud === 'necesita-atencion' || p.estadoSalud === 'critico'
-  ).length;
-  
-  return {
-    total,
-    necesitanRiego,
-    saludables,
-    necesitanAtencion,
-    porcentajeSaludables: total > 0 ? Math.round((saludables / total) * 100) : 0
-  };
-};
-
-// Ejemplo de plantas
-const PLANTAS_EJEMPLO: Omit<Planta, 'id'>[] = [
-  {
-    nombre: 'Monstera Deliciosa',
-    nombreCientifico: 'Monstera deliciosa',
-    tipo: 'Interior',
-    ubicacion: 'Sala',
-    foto: 'https://cdn.pixabay.com/photo/2021/01/22/06/04/snake-plant-5939187_1280.jpg',
-    frecuenciaRiego: 7,
-    ultimoRiego: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
-    estadoSalud: 'bueno',
-    notas: 'Le gusta la luz indirecta'
-  },
-  {
-    nombre: 'Pothos',
-    nombreCientifico: 'Epipremnum aureum',
-    tipo: 'Interior',
-    ubicacion: 'Oficina',
-    foto: 'https://cdn.pixabay.com/photo/2020/03/24/13/38/pothos-4964432_1280.jpg',
-    frecuenciaRiego: 5,
-    ultimoRiego: new Date(Date.now() - 8 * 24 * 60 * 60 * 1000).toISOString(),
-    estadoSalud: 'necesita-atencion',
-    notas: 'Muy resistente'
-  },
-  {
-    nombre: 'Suculenta Mix',
-    nombreCientifico: 'Echeveria sp.',
-    tipo: 'Suculenta',
-    ubicacion: 'Ventana',
-    foto: 'https://cdn.pixabay.com/photo/2017/09/18/15/38/succulent-2762590_1280.jpg',
-    frecuenciaRiego: 14,
-    ultimoRiego: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
-    estadoSalud: 'excelente',
-    notas: 'Riego escaso'
-  }
-];
-
-// Colores para tarjetas
+// Colores para tarjetas de estadísticas
 const colorClasses = {
   green: 'bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400',
   red: 'bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400',
@@ -177,61 +100,8 @@ const colorClasses = {
 type ColorKey = keyof typeof colorClasses;
 
 // ====================
-// COMPONENTES
+// COMPONENTE: StatCard
 // ====================
-
-interface PlantCardProps {
-  planta: Planta;
-  onRegar: (id: number) => void;
-  onClick: (planta: Planta) => void;
-  t: (key: string) => string;
-}
-
-function PlantCard({ planta, onRegar, onClick, t }: PlantCardProps) {
-  const diasSinRiego = Math.floor(
-    (new Date().getTime() - new Date(planta.ultimoRiego).getTime()) / (1000 * 60 * 60 * 24)
-  );
-
-  const estadoColors = {
-    'excelente': 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
-    'bueno': 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
-    'necesita-atencion': 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400',
-    'critico': 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
-  };
-
-  return (
-    <div 
-      onClick={() => onClick(planta)}
-      className="bg-white dark:bg-gray-800 rounded-2xl p-5 border border-gray-200 dark:border-gray-700 hover:shadow-lg transition-all cursor-pointer"
-    >
-      <div className="flex items-start justify-between mb-4">
-        <img src={planta.foto} alt={planta.nombre} className="w-20 h-20 object-cover rounded-lg"/>
-        <span className={`px-2 py-1 rounded-lg text-xs font-medium ${estadoColors[planta.estadoSalud]}`}>
-          {planta.estadoSalud}
-        </span>
-      </div>
-      
-      <h3 className="font-bold text-gray-900 dark:text-white mb-1">{planta.nombre}</h3>
-      <p className="text-sm text-gray-500 dark:text-gray-400 mb-3 italic">{planta.nombreCientifico}</p>
-      
-      <div className="flex items-center justify-between text-sm">
-        <span className="text-gray-600 dark:text-gray-400">
-          {diasSinRiego}{t('days_ago')}
-        </span>
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            onRegar(planta.id);
-          }}
-          className="px-3 py-1 bg-blue-500 hover:bg-blue-600 text-white rounded-lg text-xs font-medium transition-colors"
-        >
-          💧 {t('water')}
-        </button>
-      </div>
-    </div>
-  );
-}
-
 interface StatCardProps {
   title: string;
   value: string;
@@ -243,7 +113,7 @@ interface StatCardProps {
 
 function StatCard({ title, value, change, icon, color, positive }: StatCardProps) {
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 border border-gray-200 dark:border-gray-700">
+    <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 border border-gray-200 dark:border-gray-700 hover:shadow-lg transition-shadow">
       <div className="flex items-center justify-between mb-4">
         <p className="text-sm text-gray-600 dark:text-gray-400 font-medium">{title}</p>
         <div className={`p-2 rounded-lg ${colorClasses[color]}`}>
@@ -258,7 +128,18 @@ function StatCard({ title, value, change, icon, color, positive }: StatCardProps
   );
 }
 
-function NavItem({ icon, label, active, onClick, collapsed }: any) {
+// ====================
+// COMPONENTE: NavItem
+// ====================
+interface NavItemProps {
+  icon: React.ReactNode;
+  label: string;
+  active: boolean;
+  onClick: () => void;
+  collapsed: boolean;
+}
+
+function NavItem({ icon, label, active, onClick, collapsed }: NavItemProps) {
   return (
     <button
       onClick={onClick}
@@ -273,7 +154,16 @@ function NavItem({ icon, label, active, onClick, collapsed }: any) {
   );
 }
 
-function PlaceholderView({ icon, title, subtitle }: any) {
+// ====================
+// COMPONENTE: PlaceholderView
+// ====================
+interface PlaceholderViewProps {
+  icon: React.ReactNode;
+  title: string;
+  subtitle: string;
+}
+
+function PlaceholderView({ icon, title, subtitle }: PlaceholderViewProps) {
   return (
     <div className="text-center py-20">
       <div className="mx-auto text-gray-400 mb-4">{icon}</div>
@@ -286,31 +176,39 @@ function PlaceholderView({ icon, title, subtitle }: any) {
 // ====================
 // COMPONENTE PRINCIPAL
 // ====================
-
-export default function DiariePlantasPro() {
-  const [vistaActual, setVistaActual] = useState<Vista>('dashboard');
+export default function DiarioPlantasPro() {
+  const [vistaActual, setVistaActual] = useState<Vista>('landing');
   const [darkMode, setDarkMode] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [plantas, setPlantas] = useState<Planta[]>([]);
+  const [plantasFiltradas, setPlantasFiltradas] = useState<Planta[]>([]);
   const [cargando, setCargando] = useState(true);
   const [lang, setLang] = useState<'en' | 'es'>('es');
   const [showLangMenu, setShowLangMenu] = useState(false);
+  const [busqueda, setBusqueda] = useState('');
+  const [modalAbierto, setModalAbierto] = useState(false);
+  const [plantaEditar, setPlantaEditar] = useState<Planta | null>(null);
 
   const t = (key: string) => translations[lang][key as keyof typeof translations.en] ?? key;
 
+  // Cargar datos al iniciar
   useEffect(() => {
     const savedLang = (localStorage.getItem('lang') as 'en' | 'es') || 'es';
-    const plantasGuardadas = localStorage.getItem('plantas-pro');
     const modoOscuro = localStorage.getItem('darkMode') === 'true';
+    const vistaSaved = (localStorage.getItem('vista') as Vista) || 'landing';
     
     setLang(savedLang);
+    setVistaActual(vistaSaved);
     
-    if (plantasGuardadas) {
-      setPlantas(JSON.parse(plantasGuardadas));
+    const plantasGuardadas = cargarPlantas();
+    if (plantasGuardadas.length > 0) {
+      setPlantas(plantasGuardadas);
+      setPlantasFiltradas(plantasGuardadas);
     } else {
       const plantasConId = PLANTAS_EJEMPLO.map(p => ({ ...p, id: generarId() }));
       setPlantas(plantasConId);
-      localStorage.setItem('plantas-pro', JSON.stringify(plantasConId));
+      setPlantasFiltradas(plantasConId);
+      guardarPlantas(plantasConId);
     }
     
     setDarkMode(modoOscuro);
@@ -320,10 +218,17 @@ export default function DiariePlantasPro() {
     setCargando(false);
   }, []);
 
+  // Guardar plantas cuando cambien
   useEffect(() => {
-    if (!cargando) localStorage.setItem('plantas-pro', JSON.stringify(plantas));
+    if (!cargando) guardarPlantas(plantas);
   }, [plantas, cargando]);
 
+  // Filtrar plantas cuando cambie la búsqueda
+  useEffect(() => {
+    setPlantasFiltradas(filtrarPlantas(plantas, busqueda));
+  }, [busqueda, plantas]);
+
+  // Handlers
   const toggleDarkMode = () => {
     setDarkMode(!darkMode);
     localStorage.setItem('darkMode', String(!darkMode));
@@ -336,14 +241,46 @@ export default function DiariePlantasPro() {
     setShowLangMenu(false);
   };
 
+  const handleCambiarVista = (vista: Vista) => {
+    setVistaActual(vista);
+    localStorage.setItem('vista', vista);
+  };
+
+  const handleEntrarApp = () => {
+    handleCambiarVista('dashboard');
+  };
+
   const handleRegar = (id: number) => {
-    setPlantas(plantas.map(p => {
-      if (p.id === id) {
-        const updated = { ...p, ultimoRiego: new Date().toISOString() };
-        return { ...updated, estadoSalud: determinarEstadoSalud(updated) };
-      }
-      return p;
-    }));
+    setPlantas(plantas.map(p => 
+      p.id === id 
+        ? { ...p, ultimoRiego: new Date().toISOString() }
+        : p
+    ));
+  };
+
+  const handleAbrirModal = (planta?: Planta) => {
+    setPlantaEditar(planta || null);
+    setModalAbierto(true);
+  };
+
+  const handleGuardarPlanta = (plantaData: Omit<Planta, 'id'>) => {
+    if (plantaEditar) {
+      // Editar planta existente
+      setPlantas(plantas.map(p => 
+        p.id === plantaEditar.id 
+          ? { ...plantaData, id: plantaEditar.id }
+          : p
+      ));
+    } else {
+      // Agregar nueva planta
+      const nuevaPlanta: Planta = {
+        ...plantaData,
+        id: generarId()
+      };
+      setPlantas([...plantas, nuevaPlanta]);
+    }
+    setModalAbierto(false);
+    setPlantaEditar(null);
   };
 
   const handleEliminar = (id: number) => {
@@ -353,9 +290,10 @@ export default function DiariePlantasPro() {
   };
 
   const handleClickPlanta = (planta: Planta) => {
-    console.log('Planta seleccionada:', planta);
+    handleAbrirModal(planta);
   };
 
+  // Loading
   if (cargando) {
     return (
       <div className="flex h-screen items-center justify-center bg-gray-50 dark:bg-gray-900">
@@ -367,55 +305,318 @@ export default function DiariePlantasPro() {
     );
   }
 
+  // Landing page
+  if (vistaActual === 'landing') {
+    return <Landing onEntrar={handleEntrarApp} />;
+  }
+
   const stats = calcularEstadisticas(plantas);
 
   return (
     <div className="flex h-screen bg-gray-50 dark:bg-gray-900 overflow-hidden">
       {/* SIDEBAR */}
-      <aside className={`${sidebarOpen ? 'w-64' : 'w-20'} bg-[#2d5016] dark:bg-gray-800 text-white transition-all duration-300 flex flex-col`}>
-        {/* ... aquí va todo tu código de sidebar y nav items ... */}
+      <aside className={`${sidebarOpen ? 'w-64' : 'w-20'} bg-gradient-to-b from-green-700 to-green-900 dark:from-gray-800 dark:to-gray-900 text-white transition-all duration-300 flex flex-col border-r border-green-800 dark:border-gray-700`}>
+        {/* Header */}
+        <div className="p-6 flex items-center justify-between border-b border-white/10">
+          {sidebarOpen && (
+            <div>
+              <h1 className="text-2xl font-bold">{t('app_title')}</h1>
+              <p className="text-xs text-white/60">{t('app_version')}</p>
+            </div>
+          )}
+          <button
+            onClick={() => setSidebarOpen(!sidebarOpen)}
+            className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+            title={t('toggle_sidebar')}
+          >
+            <Menu className="w-5 h-5" />
+          </button>
+        </div>
+
+        {/* Navigation */}
+        <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
+          <NavItem
+            icon={<Home className="w-5 h-5" />}
+            label={t('dashboard')}
+            active={vistaActual === 'dashboard'}
+            onClick={() => handleCambiarVista('dashboard')}
+            collapsed={!sidebarOpen}
+          />
+          <NavItem
+            icon={<Sprout className="w-5 h-5" />}
+            label={t('my_plants')}
+            active={vistaActual === 'mis-plantas'}
+            onClick={() => handleCambiarVista('mis-plantas')}
+            collapsed={!sidebarOpen}
+          />
+          <NavItem
+            icon={<Calendar className="w-5 h-5" />}
+            label={t('calendar')}
+            active={vistaActual === 'calendario'}
+            onClick={() => handleCambiarVista('calendario')}
+            collapsed={!sidebarOpen}
+          />
+          <NavItem
+            icon={<BookOpen className="w-5 h-5" />}
+            label={t('database')}
+            active={vistaActual === 'base-datos'}
+            onClick={() => handleCambiarVista('base-datos')}
+            collapsed={!sidebarOpen}
+          />
+          <NavItem
+            icon={<Settings className="w-5 h-5" />}
+            label={t('settings')}
+            active={vistaActual === 'configuracion'}
+            onClick={() => handleCambiarVista('configuracion')}
+            collapsed={!sidebarOpen}
+          />
+          <NavItem
+            icon={<HelpCircle className="w-5 h-5" />}
+            label={t('help')}
+            active={false}
+            onClick={() => alert('Help section coming soon!')}
+            collapsed={!sidebarOpen}
+          />
+        </nav>
+
+        {/* Footer */}
+        <div className="p-4 border-t border-white/10">
+          {sidebarOpen && (
+            <div className="flex items-center gap-3 mb-3">
+              <div className="w-10 h-10 bg-white/10 rounded-full flex items-center justify-center">
+                <User className="w-5 h-5" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium truncate">Plant Lover</p>
+                <p className="text-xs text-white/60">Free Plan</p>
+              </div>
+            </div>
+          )}
+        </div>
       </aside>
 
       {/* MAIN CONTENT */}
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* HEADER */}
-        {/* ... código de header ... */}
+        <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex-1">
+              <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
+                {t('welcome')}
+              </h2>
+            </div>
 
+            {/* Search */}
+            <div className="flex items-center gap-4">
+              {(vistaActual === 'dashboard' || vistaActual === 'mis-plantas') && (
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                  <input
+                    type="text"
+                    value={busqueda}
+                    onChange={(e) => setBusqueda(e.target.value)}
+                    placeholder={t('search_placeholder')}
+                    className="pl-10 pr-4 py-2 bg-gray-100 dark:bg-gray-700 border-0 rounded-xl text-gray-900 dark:text-white placeholder-gray-500 focus:ring-2 focus:ring-green-500 outline-none w-64"
+                  />
+                </div>
+              )}
+
+              {/* Actions */}
+              <button
+                onClick={toggleDarkMode}
+                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                title={darkMode ? 'Light Mode' : 'Dark Mode'}
+              >
+                {darkMode ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+              </button>
+
+              {/* Language selector */}
+              <div className="relative">
+                <button
+                  onClick={() => setShowLangMenu(!showLangMenu)}
+                  className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors flex items-center gap-2"
+                  title={t('language')}
+                >
+                  <Globe className="w-5 h-5" />
+                  <span className="text-sm font-medium">{lang.toUpperCase()}</span>
+                </button>
+                
+                {showLangMenu && (
+                  <div className="absolute right-0 mt-2 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 py-2 z-50">
+                    <button
+                      onClick={() => handleChangeLanguage('es')}
+                      className="w-full px-4 py-2 text-left hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                    >
+                      🇪🇸 Español
+                    </button>
+                    <button
+                      onClick={() => handleChangeLanguage('en')}
+                      className="w-full px-4 py-2 text-left hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                    >
+                      🇬🇧 English
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              <button
+                onClick={() => handleAbrirModal()}
+                className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-xl font-medium transition-all shadow-lg"
+              >
+                <Plus className="w-5 h-5" />
+                <span className="hidden sm:inline">{t('add_new_plant')}</span>
+              </button>
+            </div>
+          </div>
+        </header>
+
+        {/* CONTENT */}
         <main className="flex-1 overflow-y-auto p-6">
-          {vistaActual === 'dashboard' ? (
-            <div className="space-y-6">
+          {vistaActual === 'dashboard' && (
+            <div className="space-y-6 animate-fade-in">
               {/* Estadísticas */}
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                <StatCard title={t('total_plants')} value={stats.total.toString()} change={t('active')} icon={<Sprout className="w-6 h-6" />} color="green" />
-                <StatCard title={t('needs_water')} value={stats.necesitanRiego.toString()} change={t('today')} icon={<AlertTriangle className="w-6 h-6" />} color="red" />
-                <StatCard title={t('healthy')} value={stats.saludables.toString()} change={`${stats.porcentajeSaludables}%`} icon={<TrendingUp className="w-6 h-6" />} color="green" positive />
-                <StatCard title={t('needs_attention')} value={stats.necesitanAtencion.toString()} change={t('check_now')} icon={<AlertTriangle className="w-6 h-6" />} color="yellow" />
+                <StatCard 
+                  title={t('total_plants')} 
+                  value={stats.total.toString()} 
+                  change={t('active')} 
+                  icon={<Sprout className="w-6 h-6" />} 
+                  color="green" 
+                />
+                <StatCard 
+                  title={t('needs_water')} 
+                  value={stats.necesitanRiego.toString()} 
+                  change={t('today')} 
+                  icon={<AlertTriangle className="w-6 h-6" />} 
+                  color="red" 
+                />
+                <StatCard 
+                  title={t('healthy')} 
+                  value={stats.saludables.toString()} 
+                  change={`${stats.porcentajeSaludables}%`} 
+                  icon={<TrendingUp className="w-6 h-6" />} 
+                  color="green" 
+                  positive 
+                />
+                <StatCard 
+                  title={t('needs_attention')} 
+                  value={stats.necesitanAtencion.toString()} 
+                  change={t('check_now')} 
+                  icon={<AlertTriangle className="w-6 h-6" />} 
+                  color="yellow" 
+                />
               </div>
 
               {/* Plantas */}
-              {plantas.length === 0 ? (
+              {plantasFiltradas.length === 0 ? (
                 <div className="bg-white dark:bg-gray-800 rounded-2xl p-12 text-center border-2 border-dashed border-gray-300 dark:border-gray-700">
                   <Sprout className="w-16 h-16 mx-auto text-gray-400 mb-4" />
-                  <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">{t('no_plants')}</h3>
-                  <p className="text-gray-600 dark:text-gray-400 mb-4">{t('add_first')}</p>
-                  <button className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-xl font-medium">{t('add_new_plant')}</button>
+                  <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+                    {t('no_plants')}
+                  </h3>
+                  <p className="text-gray-600 dark:text-gray-400 mb-4">
+                    {t('add_first')}
+                  </p>
+                  <button 
+                    onClick={() => handleAbrirModal()}
+                    className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-xl font-medium"
+                  >
+                    {t('add_new_plant')}
+                  </button>
                 </div>
               ) : (
                 <div>
-                  <h2 className="text-2xl font-bold mb-4 text-gray-900 dark:text-white">{t('your_plants')}</h2>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {plantas.map(p => (
-                      <PlantCard key={p.id} planta={p} onRegar={handleRegar} onClick={handleClickPlanta} t={t} />
+                  <h2 className="text-2xl font-bold mb-4 text-gray-900 dark:text-white">
+                    {t('your_plants')}
+                  </h2>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                    {plantasFiltradas.map(p => (
+                      <PlantCard 
+                        key={p.id} 
+                        planta={p} 
+                        onRegar={handleRegar} 
+                        onEditar={handleAbrirModal}
+                        onEliminar={handleEliminar}
+                        onClick={handleClickPlanta}
+                      />
                     ))}
                   </div>
                 </div>
               )}
             </div>
-          ) : (
-            <PlaceholderView icon={<BookOpen className="w-16 h-16 mx-auto text-gray-400 mb-4" />} title={t('view_in_development')} subtitle={t('view_in_development')} />
+          )}
+
+          {vistaActual === 'mis-plantas' && (
+            <div className="animate-fade-in">
+              <h2 className="text-3xl font-bold text-gray-800 dark:text-white mb-6">
+                {t('my_plants')}
+              </h2>
+              {plantasFiltradas.length === 0 ? (
+                <div className="bg-white dark:bg-gray-800 rounded-2xl p-12 text-center">
+                  <Sprout className="w-16 h-16 mx-auto text-gray-400 mb-4" />
+                  <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+                    {t('no_plants')}
+                  </h3>
+                  <p className="text-gray-600 dark:text-gray-400 mb-4">
+                    {t('add_first')}
+                  </p>
+                  <button 
+                    onClick={() => handleAbrirModal()}
+                    className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-xl font-medium"
+                  >
+                    {t('add_new_plant')}
+                  </button>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                  {plantasFiltradas.map(p => (
+                    <PlantCard 
+                      key={p.id} 
+                      planta={p} 
+                      onRegar={handleRegar} 
+                      onEditar={handleAbrirModal}
+                      onEliminar={handleEliminar}
+                      onClick={handleClickPlanta}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {vistaActual === 'calendario' && (
+            <VistaCalendario plantas={plantas} onRegar={handleRegar} />
+          )}
+
+          {vistaActual === 'base-datos' && (
+            <PlaceholderView 
+              icon={<BookOpen className="w-16 h-16" />}
+              title={t('database')}
+              subtitle={t('view_in_development')}
+            />
+          )}
+
+          {vistaActual === 'configuracion' && (
+            <PlaceholderView 
+              icon={<Settings className="w-16 h-16" />}
+              title={t('settings')}
+              subtitle={t('view_in_development')}
+            />
           )}
         </main>
       </div>
+
+      {/* MODAL */}
+      {modalAbierto && (
+        <PlantDetailModal
+          planta={plantaEditar}
+          onGuardar={handleGuardarPlanta}
+          onCerrar={() => {
+            setModalAbierto(false);
+            setPlantaEditar(null);
+          }}
+        />
+      )}
     </div>
   );
 }
