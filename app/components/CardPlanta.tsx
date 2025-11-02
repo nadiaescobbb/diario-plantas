@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { Droplet, Edit2, Trash2, MapPin, Calendar as CalendarIcon } from 'lucide-react';
-import { Planta } from '../lib/types';
+import { Planta, EstadoSalud } from '../lib/types';
 import { 
   calcularDiasParaRiego, 
   obtenerEstadoRiego, 
@@ -27,7 +27,16 @@ export default function PlantCard({
 }: PlantCardProps) {
   const diasRiego = calcularDiasParaRiego(planta.ultimoRiego, planta.frecuenciaRiego);
   const estadoRiego = obtenerEstadoRiego(diasRiego);
-  const estadoSalud = obtenerBadgeEstadoSalud(planta.estadoSalud);
+  
+  // Asegurar que estadoSalud sea válido
+  const estadoSaludValido: EstadoSalud = 
+    planta.estadoSalud === 'healthy' || 
+    planta.estadoSalud === 'needs-attention' || 
+    planta.estadoSalud === 'critical' 
+      ? planta.estadoSalud 
+      : 'healthy';
+  
+  const estadoSalud = obtenerBadgeEstadoSalud(estadoSaludValido);
 
   return (
     <div 

@@ -202,8 +202,13 @@ export default function DiarioPlantasPro() {
     
     const plantasGuardadas = cargarPlantas();
     if (plantasGuardadas.length > 0) {
-      setPlantas(plantasGuardadas);
-      setPlantasFiltradas(plantasGuardadas);
+      // Normalizar estadoSalud para plantas antiguas
+      const plantasNormalizadas = plantasGuardadas.map(p => ({
+        ...p,
+        estadoSalud: p.estadoSalud || 'healthy'
+      }));
+      setPlantas(plantasNormalizadas);
+      setPlantasFiltradas(plantasNormalizadas);
     } else {
       const plantasConId = PLANTAS_EJEMPLO.map(p => ({ ...p, id: generarId() }));
       setPlantas(plantasConId);
@@ -264,17 +269,23 @@ export default function DiarioPlantasPro() {
   };
 
   const handleGuardarPlanta = (plantaData: Omit<Planta, 'id'>) => {
+    // Asegurar que estadoSalud sea válido
+    const plantaConEstado = {
+      ...plantaData,
+      estadoSalud: plantaData.estadoSalud || 'healthy' as const
+    };
+
     if (plantaEditar) {
       // Editar planta existente
       setPlantas(plantas.map(p => 
         p.id === plantaEditar.id 
-          ? { ...plantaData, id: plantaEditar.id }
+          ? { ...plantaConEstado, id: plantaEditar.id }
           : p
       ));
     } else {
       // Agregar nueva planta
       const nuevaPlanta: Planta = {
-        ...plantaData,
+        ...plantaConEstado,
         id: generarId()
       };
       setPlantas([...plantas, nuevaPlanta]);
