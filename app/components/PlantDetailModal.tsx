@@ -10,6 +10,7 @@ interface ModalPlantaProps {
   onCerrar: () => void;
 }
 
+
 export default function ModalPlanta({ planta, onGuardar, onCerrar }: ModalPlantaProps) {
   const [form, setForm] = useState({
     nombre: planta?.nombre || '',

@@ -482,23 +482,6 @@ export default function PlantDiary() {
         />
       )}
 
-      {mostrarModalDetalle && plantaSeleccionada && (
-        <PlantDetailModal
-          planta={plantaSeleccionada}
-          historial={historial}
-          onClose={() => {
-            setMostrarModalDetalle(false);
-            setPlantaSeleccionada(null);
-          }}
-          onRegar={handleRegar}
-          onAgregarAccion={handleAgregarAccion}
-          onEliminarAccion={handleEliminarAccion}
-          onEditar={(planta: Planta) => {
-            setMostrarModalDetalle(false);
-            handleAbrirModalEditar(planta);
-          }}
-        />
-      )}
     </div>
   );
 }
