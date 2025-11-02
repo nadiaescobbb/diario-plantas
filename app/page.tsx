@@ -493,7 +493,7 @@ export default function PlantDiary() {
           onRegar={handleRegar}
           onAgregarAccion={handleAgregarAccion}
           onEliminarAccion={handleEliminarAccion}
-          onEditar={(planta) => {
+          onEditar={(planta: Planta) => {
             setMostrarModalDetalle(false);
             handleAbrirModalEditar(planta);
           }}
