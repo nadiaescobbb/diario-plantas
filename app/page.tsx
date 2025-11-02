@@ -3,93 +3,525 @@
 import React, { useState, useEffect } from 'react';
 import { 
   LayoutGrid, Sprout, Calendar, BookOpen, Settings, 
-  HelpCircle, Plus, Search, Sun, Moon, User, Bell, Home,
-  TrendingUp, AlertTriangle, Globe, Menu, X
+  Plus, Search, Sun, Moon, TrendingUp, AlertTriangle,
+  Home, Menu, X
 } from 'lucide-react';
 
-// Importar tipos y utilidades
-import { Planta, Vista, PLANTAS_EJEMPLO } from './lib/types';
+// Importar tipos y utilidades consolidadas
+import { Planta, AccionCuidado, Vista } from './lib/types';
 import { 
   calcularEstadisticas, 
-  guardarPlantas, 
+  determinarEstadoSalud,
   cargarPlantas,
+  guardarPlantas,
+  cargarHistorial,
+  guardarHistorial,
   generarId,
-  calcularDiasParaRiego,
-  obtenerEstadoRiego,
-  filtrarPlantas
+  filtrarPlantas,
+  PLANTAS_EJEMPLO
 } from './lib/utils';
 
 // Importar componentes
+import Landing from './components/Landing';
 import PlantCard from './components/CardPlanta';
 import PlantDetailModal from './components/PlantDetailModal';
+import ModalPlanta from './components/ModalPlanta';
 import VistaCalendario from './components/VistaCalendario';
-import Landing from './components/Landing';
 
-// Traducciones
-const translations = {
-  en: {
-    app_title: "Plant Diary",
-    app_version: "v2.0 Pro",
-    dashboard: "Dashboard",
-    my_plants: "My Plants",
-    calendar: "Calendar",
-    database: "Plant Database",
-    settings: "Settings",
-    help: "Help",
-    add_new_plant: "Add New Plant",
-    loading: "Loading...",
-    welcome: "Welcome back, get an overview of your plants.",
-    total_plants: "Total Plants",
-    needs_water: "Needs Water",
-    healthy: "Healthy",
-    needs_attention: "Needs Attention",
-    no_plants: "No plants yet",
-    add_first: "Add your first plant to get started",
-    view_in_development: "In development...",
-    active: "Active",
-    today: "Today",
-    check_now: "Check now",
-    your_plants: "Your Plants",
-    search_placeholder: "Search for a plant...",
-    confirm_delete: "Are you sure you want to delete this plant?",
-    language: "Language",
-    toggle_sidebar: "Toggle Sidebar",
-    notifications: "Notifications",
-    profile: "Profile"
-  },
-  es: {
-    app_title: "Diario de Plantas",
-    app_version: "v2.0 Pro",
-    dashboard: "Panel",
-    my_plants: "Mis Plantas",
-    calendar: "Calendario",
-    database: "Base de Datos",
-    settings: "Configuración",
-    help: "Ayuda",
-    add_new_plant: "Agregar Planta",
-    loading: "Cargando...",
-    welcome: "Bienvenido, revisa el estado de tus plantas.",
-    total_plants: "Plantas Totales",
-    needs_water: "Necesitan Agua",
-    healthy: "Saludables",
-    needs_attention: "Necesitan Atención",
-    no_plants: "Aún no hay plantas",
-    add_first: "Agrega tu primera planta para comenzar",
-    view_in_development: "En desarrollo...",
-    active: "Activas",
-    today: "Hoy",
-    check_now: "Revisar ahora",
-    your_plants: "Tus Plantas",
-    search_placeholder: "Buscar una planta...",
-    confirm_delete: "¿Estás seguro de que deseas eliminar esta planta?",
-    language: "Idioma",
-    toggle_sidebar: "Alternar Menú",
-    notifications: "Notificaciones",
-    profile: "Perfil"
+export default function PlantDiary() {
+  // Estados principales
+  const [vistaActual, setVistaActual] = useState<Vista>('landing');
+  const [plantas, setPlantas] = useState<Planta[]>([]);
+  const [historial, setHistorial] = useState<AccionCuidado[]>([]);
+  const [darkMode, setDarkMode] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [cargando, setCargando] = useState(true);
+  const [busqueda, setBusqueda] = useState('');
+  
+  // Estados para modales
+  const [plantaSeleccionada, setPlantaSeleccionada] = useState<Planta | null>(null);
+  const [mostrarModalDetalle, setMostrarModalDetalle] = useState(false);
+  const [mostrarModalEditar, setMostrarModalEditar] = useState(false);
+  const [plantaAEditar, setPlantaAEditar] = useState<Planta | null>(null);
+
+  // Cargar datos al inicio
+  useEffect(() => {
+    const plantasGuardadas = cargarPlantas();
+    const historialGuardado = cargarHistorial();
+    const modoOscuro = localStorage.getItem('darkMode') === 'true';
+    const vistaGuardada = localStorage.getItem('vistaActual') as Vista;
+    
+    if (plantasGuardadas.length === 0) {
+      // Si no hay plantas, crear ejemplos
+      const plantasConId = PLANTAS_EJEMPLO.map(p => ({
+        ...p,
+        id: generarId(),
+        estadoSalud: determinarEstadoSalud({ ...p, id: 0 } as Planta)
+      }));
+      setPlantas(plantasConId);
+      guardarPlantas(plantasConId);
+    } else {
+      setPlantas(plantasGuardadas);
+    }
+    
+    setHistorial(historialGuardado);
+    setDarkMode(modoOscuro);
+    setVistaActual(vistaGuardada || 'landing');
+    
+    if (modoOscuro) {
+      document.documentElement.classList.add('dark');
+    }
+    
+    setCargando(false);
+  }, []);
+
+  // Guardar plantas cuando cambien
+  useEffect(() => {
+    if (!cargando) {
+      guardarPlantas(plantas);
+    }
+  }, [plantas, cargando]);
+
+  // Guardar historial cuando cambie
+  useEffect(() => {
+    if (!cargando) {
+      guardarHistorial(historial);
+    }
+  }, [historial, cargando]);
+
+  // Guardar vista actual
+  useEffect(() => {
+    if (!cargando) {
+      localStorage.setItem('vistaActual', vistaActual);
+    }
+  }, [vistaActual, cargando]);
+
+  // Toggle dark mode
+  const toggleDarkMode = () => {
+    setDarkMode(!darkMode);
+    localStorage.setItem('darkMode', String(!darkMode));
+    document.documentElement.classList.toggle('dark');
+  };
+
+  // Handlers de plantas
+  const handleRegar = (id: number) => {
+    setPlantas(plantas.map(p => {
+      if (p.id === id) {
+        const actualizada = { 
+          ...p, 
+          ultimoRiego: new Date().toISOString(),
+          estadoSalud: 'healthy' as const
+        };
+        
+        // Agregar al historial
+        const nuevaAccion: AccionCuidado = {
+          id: generarId(),
+          plantaId: id,
+          tipo: 'riego',
+          fecha: new Date().toISOString()
+        };
+        setHistorial([...historial, nuevaAccion]);
+        
+        return actualizada;
+      }
+      return p;
+    }));
+  };
+
+  const handleEliminar = (id: number) => {
+    if (window.confirm('¿Are you sure you want to delete this plant?')) {
+      setPlantas(plantas.filter(p => p.id !== id));
+      setHistorial(historial.filter(h => h.plantaId !== id));
+    }
+  };
+
+  const handleGuardarPlanta = (plantaData: Omit<Planta, 'id'>) => {
+    if (plantaAEditar) {
+      // Editar planta existente
+      setPlantas(plantas.map(p => 
+        p.id === plantaAEditar.id 
+          ? { ...plantaData, id: plantaAEditar.id }
+          : p
+      ));
+    } else {
+      // Agregar nueva planta
+      const nuevaPlanta: Planta = {
+        ...plantaData,
+        id: generarId(),
+        estadoSalud: 'healthy'
+      };
+      setPlantas([...plantas, nuevaPlanta]);
+    }
+    setMostrarModalEditar(false);
+    setPlantaAEditar(null);
+  };
+
+  const handleAbrirModalEditar = (planta?: Planta) => {
+    setPlantaAEditar(planta || null);
+    setMostrarModalEditar(true);
+  };
+
+  const handleAbrirDetalle = (planta: Planta) => {
+    setPlantaSeleccionada(planta);
+    setMostrarModalDetalle(true);
+  };
+
+  const handleAgregarAccion = (accion: Omit<AccionCuidado, 'id'>) => {
+    const nuevaAccion: AccionCuidado = {
+      ...accion,
+      id: generarId()
+    };
+    setHistorial([...historial, nuevaAccion]);
+    
+    // Si es riego, actualizar la planta
+    if (accion.tipo === 'riego') {
+      setPlantas(plantas.map(p => 
+        p.id === accion.plantaId 
+          ? { ...p, ultimoRiego: accion.fecha, estadoSalud: 'healthy' as const }
+          : p
+      ));
+    }
+  };
+
+  const handleEliminarAccion = (id: number) => {
+    setHistorial(historial.filter(h => h.id !== id));
+  };
+
+  // Entrar a la app desde landing
+  const handleEntrar = () => {
+    setVistaActual('dashboard');
+  };
+
+  // Plantas filtradas
+  const plantasFiltradas = filtrarPlantas(plantas, busqueda);
+
+  if (cargando) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-gray-50 dark:bg-gray-900">
+        <div className="text-center">
+          <Sprout className="w-16 h-16 mx-auto text-green-600 animate-pulse mb-4" />
+          <p className="text-gray-600 dark:text-gray-400">Loading...</p>
+        </div>
+      </div>
+    );
   }
-};
 
-// Colores para tarjetas de estadísticas
+  // Mostrar landing page
+  if (vistaActual === 'landing') {
+    return <Landing onEntrar={handleEntrar} />;
+  }
+
+  const stats = calcularEstadisticas(plantas);
+
+  return (
+    <div className="flex h-screen bg-gray-50 dark:bg-gray-900 overflow-hidden">
+      {/* SIDEBAR */}
+      <aside className={`${sidebarOpen ? 'w-64' : 'w-20'} bg-gradient-to-b from-green-700 to-green-900 dark:from-gray-800 dark:to-gray-900 text-white transition-all duration-300 flex flex-col shadow-2xl`}>
+        {/* Logo */}
+        <div className="p-6 border-b border-white/10">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center flex-shrink-0">
+              <Sprout className="w-6 h-6" />
+            </div>
+            {sidebarOpen && (
+              <div>
+                <h1 className="font-bold text-lg">Plant Diary</h1>
+                <p className="text-xs text-white/70">v2.0 Pro</p>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Navigation */}
+        <nav className="flex-1 p-4 space-y-2">
+          <NavItem 
+            icon={<Home className="w-5 h-5" />}
+            label="Dashboard"
+            active={vistaActual === 'dashboard'}
+            onClick={() => setVistaActual('dashboard')}
+            collapsed={!sidebarOpen}
+          />
+          <NavItem 
+            icon={<LayoutGrid className="w-5 h-5" />}
+            label="My Plants"
+            active={vistaActual === 'mis-plantas'}
+            onClick={() => setVistaActual('mis-plantas')}
+            collapsed={!sidebarOpen}
+          />
+          <NavItem 
+            icon={<Calendar className="w-5 h-5" />}
+            label="Calendar"
+            active={vistaActual === 'calendario'}
+            onClick={() => setVistaActual('calendario')}
+            collapsed={!sidebarOpen}
+          />
+          <NavItem 
+            icon={<BookOpen className="w-5 h-5" />}
+            label="Database"
+            active={vistaActual === 'base-datos'}
+            onClick={() => setVistaActual('base-datos')}
+            collapsed={!sidebarOpen}
+          />
+          <NavItem 
+            icon={<Settings className="w-5 h-5" />}
+            label="Settings"
+            active={vistaActual === 'configuracion'}
+            onClick={() => setVistaActual('configuracion')}
+            collapsed={!sidebarOpen}
+          />
+        </nav>
+
+        {/* Toggle Sidebar */}
+        <div className="p-4 border-t border-white/10">
+          <button
+            onClick={() => setSidebarOpen(!sidebarOpen)}
+            className="w-full py-2 px-3 bg-white/10 hover:bg-white/20 rounded-lg transition-all flex items-center justify-center gap-2"
+            title={sidebarOpen ? "Collapse" : "Expand"}
+          >
+            <Menu className="w-5 h-5" />
+            {sidebarOpen && <span className="text-sm">Collapse</span>}
+          </button>
+        </div>
+      </aside>
+
+      {/* MAIN CONTENT */}
+      <div className="flex-1 flex flex-col overflow-hidden">
+        {/* HEADER */}
+        <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
+                {vistaActual === 'dashboard' && 'Dashboard'}
+                {vistaActual === 'mis-plantas' && 'My Plants'}
+                {vistaActual === 'calendario' && 'Care Calendar'}
+                {vistaActual === 'base-datos' && 'Plant Database'}
+                {vistaActual === 'configuracion' && 'Settings'}
+              </h2>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                {vistaActual === 'dashboard' && `Manage your ${plantas.length} plants`}
+                {vistaActual === 'mis-plantas' && `${plantasFiltradas.length} plants found`}
+                {vistaActual === 'calendario' && 'Upcoming care schedule'}
+              </p>
+            </div>
+
+            <div className="flex items-center gap-3">
+              {/* Buscador (solo en mis-plantas) */}
+              {vistaActual === 'mis-plantas' && (
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                  <input
+                    type="text"
+                    value={busqueda}
+                    onChange={(e) => setBusqueda(e.target.value)}
+                    placeholder="Search plants..."
+                    className="pl-10 pr-4 py-2 bg-gray-100 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-sm focus:ring-2 focus:ring-green-500 outline-none w-64"
+                  />
+                </div>
+              )}
+
+              {/* Dark mode toggle */}
+              <button
+                onClick={toggleDarkMode}
+                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                title={darkMode ? "Light mode" : "Dark mode"}
+              >
+                {darkMode ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+              </button>
+
+              {/* Add plant button */}
+              {(vistaActual === 'dashboard' || vistaActual === 'mis-plantas') && (
+                <button
+                  onClick={() => handleAbrirModalEditar()}
+                  className="flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition-all shadow-lg shadow-green-500/30"
+                >
+                  <Plus className="w-5 h-5" />
+                  <span className="hidden sm:inline">Add Plant</span>
+                </button>
+              )}
+            </div>
+          </div>
+        </header>
+
+        {/* MAIN CONTENT AREA */}
+        <main className="flex-1 overflow-y-auto p-6">
+          {/* DASHBOARD */}
+          {vistaActual === 'dashboard' && (
+            <div className="space-y-6 animate-fade-in">
+              {/* Stats Cards */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <StatCard 
+                  title="Total Plants" 
+                  value={stats.total.toString()} 
+                  change="Active" 
+                  icon={<Sprout className="w-6 h-6" />} 
+                  color="green" 
+                />
+                <StatCard 
+                  title="Needs Water" 
+                  value={stats.necesitanRiego.toString()} 
+                  change="Today" 
+                  icon={<AlertTriangle className="w-6 h-6" />} 
+                  color="red" 
+                />
+                <StatCard 
+                  title="Healthy" 
+                  value={stats.saludables.toString()} 
+                  change={`${stats.porcentajeSaludables}%`} 
+                  icon={<TrendingUp className="w-6 h-6" />} 
+                  color="green" 
+                  positive 
+                />
+                <StatCard 
+                  title="Needs Attention" 
+                  value={stats.necesitanAtencion.toString()} 
+                  change="Check now" 
+                  icon={<AlertTriangle className="w-6 h-6" />} 
+                  color="yellow" 
+                />
+              </div>
+
+              {/* Plants Grid */}
+              {plantas.length === 0 ? (
+                <EmptyState onAddPlant={() => handleAbrirModalEditar()} />
+              ) : (
+                <div>
+                  <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
+                    Your Plants
+                  </h3>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {plantas.slice(0, 6).map(planta => (
+                      <PlantCard
+                        key={planta.id}
+                        planta={planta}
+                        onRegar={handleRegar}
+                        onEditar={handleAbrirModalEditar}
+                        onEliminar={handleEliminar}
+                        onClick={handleAbrirDetalle}
+                      />
+                    ))}
+                  </div>
+                  {plantas.length > 6 && (
+                    <div className="mt-6 text-center">
+                      <button
+                        onClick={() => setVistaActual('mis-plantas')}
+                        className="px-6 py-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg font-medium transition-all"
+                      >
+                        View All {plantas.length} Plants
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* MY PLANTS */}
+          {vistaActual === 'mis-plantas' && (
+            <div className="animate-fade-in">
+              {plantasFiltradas.length === 0 ? (
+                <div className="text-center py-12">
+                  <Search className="w-16 h-16 mx-auto text-gray-400 mb-4" />
+                  <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+                    No plants found
+                  </h3>
+                  <p className="text-gray-600 dark:text-gray-400">
+                    Try adjusting your search
+                  </p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                  {plantasFiltradas.map(planta => (
+                    <PlantCard
+                      key={planta.id}
+                      planta={planta}
+                      onRegar={handleRegar}
+                      onEditar={handleAbrirModalEditar}
+                      onEliminar={handleEliminar}
+                      onClick={handleAbrirDetalle}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* CALENDAR */}
+          {vistaActual === 'calendario' && (
+            <VistaCalendario plantas={plantas} onRegar={handleRegar} />
+          )}
+
+          {/* DATABASE */}
+          {vistaActual === 'base-datos' && (
+            <PlaceholderView 
+              icon={<BookOpen className="w-16 h-16" />}
+              title="Plant Database"
+              subtitle="Coming soon: Browse plant care guides and disease information"
+            />
+          )}
+
+          {/* SETTINGS */}
+          {vistaActual === 'configuracion' && (
+            <PlaceholderView 
+              icon={<Settings className="w-16 h-16" />}
+              title="Settings"
+              subtitle="Coming soon: Customize your experience"
+            />
+          )}
+        </main>
+      </div>
+
+      {/* MODALS */}
+      {mostrarModalEditar && (
+        <ModalPlanta
+          planta={plantaAEditar}
+          onGuardar={handleGuardarPlanta}
+          onCerrar={() => {
+            setMostrarModalEditar(false);
+            setPlantaAEditar(null);
+          }}
+        />
+      )}
+
+      {mostrarModalDetalle && plantaSeleccionada && (
+        <PlantDetailModal
+          planta={plantaSeleccionada}
+          historial={historial}
+          onClose={() => {
+            setMostrarModalDetalle(false);
+            setPlantaSeleccionada(null);
+          }}
+          onRegar={handleRegar}
+          onAgregarAccion={handleAgregarAccion}
+          onEliminarAccion={handleEliminarAccion}
+          onEditar={(planta) => {
+            setMostrarModalDetalle(false);
+            handleAbrirModalEditar(planta);
+          }}
+        />
+      )}
+    </div>
+  );
+}
+
+// ====== COMPONENTES AUXILIARES ======
+
+function NavItem({ icon, label, active, onClick, collapsed }: any) {
+  return (
+    <button
+      onClick={onClick}
+      className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
+        active 
+          ? 'bg-white/20 text-white shadow-lg' 
+          : 'text-white/70 hover:bg-white/10 hover:text-white'
+      }`}
+      title={collapsed ? label : undefined}
+    >
+      {icon}
+      {!collapsed && <span className="font-medium">{label}</span>}
+    </button>
+  );
+}
+
 const colorClasses = {
   green: 'bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400',
   red: 'bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400',
@@ -99,24 +531,12 @@ const colorClasses = {
 
 type ColorKey = keyof typeof colorClasses;
 
-// ====================
-// COMPONENTE: StatCard
-// ====================
-interface StatCardProps {
-  title: string;
-  value: string;
-  change: string;
-  icon: React.ReactNode;
-  color: ColorKey;
-  positive?: boolean;
-}
-
-function StatCard({ title, value, change, icon, color, positive }: StatCardProps) {
+function StatCard({ title, value, change, icon, color, positive }: any) {
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 border border-gray-200 dark:border-gray-700 hover:shadow-lg transition-shadow">
+    <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 border border-gray-200 dark:border-gray-700 hover:shadow-lg transition-all">
       <div className="flex items-center justify-between mb-4">
         <p className="text-sm text-gray-600 dark:text-gray-400 font-medium">{title}</p>
-        <div className={`p-2 rounded-lg ${colorClasses[color]}`}>
+        <div className={`p-3 rounded-xl ${colorClasses[color as ColorKey]}`}>
           {icon}
         </div>
       </div>
@@ -128,506 +548,33 @@ function StatCard({ title, value, change, icon, color, positive }: StatCardProps
   );
 }
 
-// ====================
-// COMPONENTE: NavItem
-// ====================
-interface NavItemProps {
-  icon: React.ReactNode;
-  label: string;
-  active: boolean;
-  onClick: () => void;
-  collapsed: boolean;
-}
-
-function NavItem({ icon, label, active, onClick, collapsed }: NavItemProps) {
+function EmptyState({ onAddPlant }: { onAddPlant: () => void }) {
   return (
-    <button
-      onClick={onClick}
-      className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
-        active ? 'bg-white/10 text-white' : 'text-white/70 hover:bg-white/5 hover:text-white'
-      }`}
-      title={collapsed ? label : undefined}
-    >
-      {icon}
-      {!collapsed && <span className="font-medium">{label}</span>}
-    </button>
-  );
-}
-
-// ====================
-// COMPONENTE: PlaceholderView
-// ====================
-interface PlaceholderViewProps {
-  icon: React.ReactNode;
-  title: string;
-  subtitle: string;
-}
-
-function PlaceholderView({ icon, title, subtitle }: PlaceholderViewProps) {
-  return (
-    <div className="text-center py-20">
-      <div className="mx-auto text-gray-400 mb-4">{icon}</div>
-      <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">{title}</h2>
-      <p className="text-gray-600 dark:text-gray-400">{subtitle}</p>
+    <div className="bg-white dark:bg-gray-800 rounded-2xl p-12 text-center border-2 border-dashed border-gray-300 dark:border-gray-700">
+      <Sprout className="w-16 h-16 mx-auto text-gray-400 mb-4" />
+      <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+        No plants yet
+      </h3>
+      <p className="text-gray-600 dark:text-gray-400 mb-6">
+        Add your first plant to get started
+      </p>
+      <button 
+        onClick={onAddPlant}
+        className="px-6 py-3 bg-green-600 hover:bg-green-700 text-white rounded-xl font-medium transition-all shadow-lg shadow-green-500/30"
+      >
+        <Plus className="w-5 h-5 inline mr-2" />
+        Add Your First Plant
+      </button>
     </div>
   );
 }
 
-// ====================
-// COMPONENTE PRINCIPAL
-// ====================
-export default function DiarioPlantasPro() {
-  const [vistaActual, setVistaActual] = useState<Vista>('landing');
-  const [darkMode, setDarkMode] = useState(false);
-  const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [plantas, setPlantas] = useState<Planta[]>([]);
-  const [plantasFiltradas, setPlantasFiltradas] = useState<Planta[]>([]);
-  const [cargando, setCargando] = useState(true);
-  const [lang, setLang] = useState<'en' | 'es'>('es');
-  const [showLangMenu, setShowLangMenu] = useState(false);
-  const [busqueda, setBusqueda] = useState('');
-  const [modalAbierto, setModalAbierto] = useState(false);
-  const [plantaEditar, setPlantaEditar] = useState<Planta | null>(null);
-
-  const t = (key: string) => translations[lang][key as keyof typeof translations.en] ?? key;
-
-  // Cargar datos al iniciar
-  useEffect(() => {
-    const savedLang = (localStorage.getItem('lang') as 'en' | 'es') || 'es';
-    const modoOscuro = localStorage.getItem('darkMode') === 'true';
-    const vistaSaved = (localStorage.getItem('vista') as Vista) || 'landing';
-    
-    setLang(savedLang);
-    setVistaActual(vistaSaved);
-    
-    const plantasGuardadas = cargarPlantas();
-    if (plantasGuardadas.length > 0) {
-      // Normalizar estadoSalud para plantas antiguas
-      const plantasNormalizadas = plantasGuardadas.map(p => ({
-        ...p,
-        estadoSalud: p.estadoSalud || 'healthy'
-      }));
-      setPlantas(plantasNormalizadas);
-      setPlantasFiltradas(plantasNormalizadas);
-    } else {
-      const plantasConId = PLANTAS_EJEMPLO.map(p => ({ ...p, id: generarId() }));
-      setPlantas(plantasConId);
-      setPlantasFiltradas(plantasConId);
-      guardarPlantas(plantasConId);
-    }
-    
-    setDarkMode(modoOscuro);
-    if (modoOscuro) {
-      document.documentElement.classList.add('dark');
-    }
-    setCargando(false);
-  }, []);
-
-  // Guardar plantas cuando cambien
-  useEffect(() => {
-    if (!cargando) guardarPlantas(plantas);
-  }, [plantas, cargando]);
-
-  // Filtrar plantas cuando cambie la búsqueda
-  useEffect(() => {
-    setPlantasFiltradas(filtrarPlantas(plantas, busqueda));
-  }, [busqueda, plantas]);
-
-  // Handlers
-  const toggleDarkMode = () => {
-    setDarkMode(!darkMode);
-    localStorage.setItem('darkMode', String(!darkMode));
-    document.documentElement.classList.toggle('dark');
-  };
-
-  const handleChangeLanguage = (newLang: 'en' | 'es') => {
-    setLang(newLang);
-    localStorage.setItem('lang', newLang);
-    setShowLangMenu(false);
-  };
-
-  const handleCambiarVista = (vista: Vista) => {
-    setVistaActual(vista);
-    localStorage.setItem('vista', vista);
-  };
-
-  const handleEntrarApp = () => {
-    handleCambiarVista('dashboard');
-  };
-
-  const handleRegar = (id: number) => {
-    setPlantas(plantas.map(p => 
-      p.id === id 
-        ? { ...p, ultimoRiego: new Date().toISOString() }
-        : p
-    ));
-  };
-
-  const handleAbrirModal = (planta?: Planta) => {
-    setPlantaEditar(planta || null);
-    setModalAbierto(true);
-  };
-
-  const handleGuardarPlanta = (plantaData: Omit<Planta, 'id'>) => {
-    // Asegurar que estadoSalud sea válido
-    const plantaConEstado = {
-      ...plantaData,
-      estadoSalud: plantaData.estadoSalud || 'healthy' as const
-    };
-
-    if (plantaEditar) {
-      // Editar planta existente
-      setPlantas(plantas.map(p => 
-        p.id === plantaEditar.id 
-          ? { ...plantaConEstado, id: plantaEditar.id }
-          : p
-      ));
-    } else {
-      // Agregar nueva planta
-      const nuevaPlanta: Planta = {
-        ...plantaConEstado,
-        id: generarId()
-      };
-      setPlantas([...plantas, nuevaPlanta]);
-    }
-    setModalAbierto(false);
-    setPlantaEditar(null);
-  };
-
-  const handleEliminar = (id: number) => {
-    if (window.confirm(t('confirm_delete'))) {
-      setPlantas(plantas.filter(p => p.id !== id));
-    }
-  };
-
-  const handleClickPlanta = (planta: Planta) => {
-    handleAbrirModal(planta);
-  };
-
-  // Loading
-  if (cargando) {
-    return (
-      <div className="flex h-screen items-center justify-center bg-gray-50 dark:bg-gray-900">
-        <div className="text-center">
-          <Sprout className="w-16 h-16 mx-auto text-green-600 animate-pulse mb-4" />
-          <p className="text-gray-600 dark:text-gray-400">{t('loading')}</p>
-        </div>
-      </div>
-    );
-  }
-
-  // Landing page
-  if (vistaActual === 'landing') {
-    return <Landing onEntrar={handleEntrarApp} />;
-  }
-
-  const stats = calcularEstadisticas(plantas);
-
+function PlaceholderView({ icon, title, subtitle }: any) {
   return (
-    <div className="flex h-screen bg-gray-50 dark:bg-gray-900 overflow-hidden">
-      {/* SIDEBAR */}
-      <aside className={`${sidebarOpen ? 'w-64' : 'w-20'} bg-gradient-to-b from-green-700 to-green-900 dark:from-gray-800 dark:to-gray-900 text-white transition-all duration-300 flex flex-col border-r border-green-800 dark:border-gray-700`}>
-        {/* Header */}
-        <div className="p-6 flex items-center justify-between border-b border-white/10">
-          {sidebarOpen && (
-            <div>
-              <h1 className="text-2xl font-bold">{t('app_title')}</h1>
-              <p className="text-xs text-white/60">{t('app_version')}</p>
-            </div>
-          )}
-          <button
-            onClick={() => setSidebarOpen(!sidebarOpen)}
-            className="p-2 hover:bg-white/10 rounded-lg transition-colors"
-            title={t('toggle_sidebar')}
-          >
-            <Menu className="w-5 h-5" />
-          </button>
-        </div>
-
-        {/* Navigation */}
-        <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
-          <NavItem
-            icon={<Home className="w-5 h-5" />}
-            label={t('dashboard')}
-            active={vistaActual === 'dashboard'}
-            onClick={() => handleCambiarVista('dashboard')}
-            collapsed={!sidebarOpen}
-          />
-          <NavItem
-            icon={<Sprout className="w-5 h-5" />}
-            label={t('my_plants')}
-            active={vistaActual === 'mis-plantas'}
-            onClick={() => handleCambiarVista('mis-plantas')}
-            collapsed={!sidebarOpen}
-          />
-          <NavItem
-            icon={<Calendar className="w-5 h-5" />}
-            label={t('calendar')}
-            active={vistaActual === 'calendario'}
-            onClick={() => handleCambiarVista('calendario')}
-            collapsed={!sidebarOpen}
-          />
-          <NavItem
-            icon={<BookOpen className="w-5 h-5" />}
-            label={t('database')}
-            active={vistaActual === 'base-datos'}
-            onClick={() => handleCambiarVista('base-datos')}
-            collapsed={!sidebarOpen}
-          />
-          <NavItem
-            icon={<Settings className="w-5 h-5" />}
-            label={t('settings')}
-            active={vistaActual === 'configuracion'}
-            onClick={() => handleCambiarVista('configuracion')}
-            collapsed={!sidebarOpen}
-          />
-          <NavItem
-            icon={<HelpCircle className="w-5 h-5" />}
-            label={t('help')}
-            active={false}
-            onClick={() => alert('Help section coming soon!')}
-            collapsed={!sidebarOpen}
-          />
-        </nav>
-
-        {/* Footer */}
-        <div className="p-4 border-t border-white/10">
-          {sidebarOpen && (
-            <div className="flex items-center gap-3 mb-3">
-              <div className="w-10 h-10 bg-white/10 rounded-full flex items-center justify-center">
-                <User className="w-5 h-5" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium truncate">Plant Lover</p>
-                <p className="text-xs text-white/60">Free Plan</p>
-              </div>
-            </div>
-          )}
-        </div>
-      </aside>
-
-      {/* MAIN CONTENT */}
-      <div className="flex-1 flex flex-col overflow-hidden">
-        {/* HEADER */}
-        <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex-1">
-              <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
-                {t('welcome')}
-              </h2>
-            </div>
-
-            {/* Search */}
-            <div className="flex items-center gap-4">
-              {(vistaActual === 'dashboard' || vistaActual === 'mis-plantas') && (
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-                  <input
-                    type="text"
-                    value={busqueda}
-                    onChange={(e) => setBusqueda(e.target.value)}
-                    placeholder={t('search_placeholder')}
-                    className="pl-10 pr-4 py-2 bg-gray-100 dark:bg-gray-700 border-0 rounded-xl text-gray-900 dark:text-white placeholder-gray-500 focus:ring-2 focus:ring-green-500 outline-none w-64"
-                  />
-                </div>
-              )}
-
-              {/* Actions */}
-              <button
-                onClick={toggleDarkMode}
-                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
-                title={darkMode ? 'Light Mode' : 'Dark Mode'}
-              >
-                {darkMode ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
-              </button>
-
-              {/* Language selector */}
-              <div className="relative">
-                <button
-                  onClick={() => setShowLangMenu(!showLangMenu)}
-                  className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors flex items-center gap-2"
-                  title={t('language')}
-                >
-                  <Globe className="w-5 h-5" />
-                  <span className="text-sm font-medium">{lang.toUpperCase()}</span>
-                </button>
-                
-                {showLangMenu && (
-                  <div className="absolute right-0 mt-2 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 py-2 z-50">
-                    <button
-                      onClick={() => handleChangeLanguage('es')}
-                      className="w-full px-4 py-2 text-left hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                    >
-                      🇪🇸 Español
-                    </button>
-                    <button
-                      onClick={() => handleChangeLanguage('en')}
-                      className="w-full px-4 py-2 text-left hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                    >
-                      🇬🇧 English
-                    </button>
-                  </div>
-                )}
-              </div>
-
-              <button
-                onClick={() => handleAbrirModal()}
-                className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-xl font-medium transition-all shadow-lg"
-              >
-                <Plus className="w-5 h-5" />
-                <span className="hidden sm:inline">{t('add_new_plant')}</span>
-              </button>
-            </div>
-          </div>
-        </header>
-
-        {/* CONTENT */}
-        <main className="flex-1 overflow-y-auto p-6">
-          {vistaActual === 'dashboard' && (
-            <div className="space-y-6 animate-fade-in">
-              {/* Estadísticas */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                <StatCard 
-                  title={t('total_plants')} 
-                  value={stats.total.toString()} 
-                  change={t('active')} 
-                  icon={<Sprout className="w-6 h-6" />} 
-                  color="green" 
-                />
-                <StatCard 
-                  title={t('needs_water')} 
-                  value={stats.necesitanRiego.toString()} 
-                  change={t('today')} 
-                  icon={<AlertTriangle className="w-6 h-6" />} 
-                  color="red" 
-                />
-                <StatCard 
-                  title={t('healthy')} 
-                  value={stats.saludables.toString()} 
-                  change={`${stats.porcentajeSaludables}%`} 
-                  icon={<TrendingUp className="w-6 h-6" />} 
-                  color="green" 
-                  positive 
-                />
-                <StatCard 
-                  title={t('needs_attention')} 
-                  value={stats.necesitanAtencion.toString()} 
-                  change={t('check_now')} 
-                  icon={<AlertTriangle className="w-6 h-6" />} 
-                  color="yellow" 
-                />
-              </div>
-
-              {/* Plantas */}
-              {plantasFiltradas.length === 0 ? (
-                <div className="bg-white dark:bg-gray-800 rounded-2xl p-12 text-center border-2 border-dashed border-gray-300 dark:border-gray-700">
-                  <Sprout className="w-16 h-16 mx-auto text-gray-400 mb-4" />
-                  <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
-                    {t('no_plants')}
-                  </h3>
-                  <p className="text-gray-600 dark:text-gray-400 mb-4">
-                    {t('add_first')}
-                  </p>
-                  <button 
-                    onClick={() => handleAbrirModal()}
-                    className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-xl font-medium"
-                  >
-                    {t('add_new_plant')}
-                  </button>
-                </div>
-              ) : (
-                <div>
-                  <h2 className="text-2xl font-bold mb-4 text-gray-900 dark:text-white">
-                    {t('your_plants')}
-                  </h2>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                    {plantasFiltradas.map(p => (
-                      <PlantCard 
-                        key={p.id} 
-                        planta={p} 
-                        onRegar={handleRegar} 
-                        onEditar={handleAbrirModal}
-                        onEliminar={handleEliminar}
-                        onClick={handleClickPlanta}
-                      />
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
-
-          {vistaActual === 'mis-plantas' && (
-            <div className="animate-fade-in">
-              <h2 className="text-3xl font-bold text-gray-800 dark:text-white mb-6">
-                {t('my_plants')}
-              </h2>
-              {plantasFiltradas.length === 0 ? (
-                <div className="bg-white dark:bg-gray-800 rounded-2xl p-12 text-center">
-                  <Sprout className="w-16 h-16 mx-auto text-gray-400 mb-4" />
-                  <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
-                    {t('no_plants')}
-                  </h3>
-                  <p className="text-gray-600 dark:text-gray-400 mb-4">
-                    {t('add_first')}
-                  </p>
-                  <button 
-                    onClick={() => handleAbrirModal()}
-                    className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-xl font-medium"
-                  >
-                    {t('add_new_plant')}
-                  </button>
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                  {plantasFiltradas.map(p => (
-                    <PlantCard 
-                      key={p.id} 
-                      planta={p} 
-                      onRegar={handleRegar} 
-                      onEditar={handleAbrirModal}
-                      onEliminar={handleEliminar}
-                      onClick={handleClickPlanta}
-                    />
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
-
-          {vistaActual === 'calendario' && (
-            <VistaCalendario plantas={plantas} onRegar={handleRegar} />
-          )}
-
-          {vistaActual === 'base-datos' && (
-            <PlaceholderView 
-              icon={<BookOpen className="w-16 h-16" />}
-              title={t('database')}
-              subtitle={t('view_in_development')}
-            />
-          )}
-
-          {vistaActual === 'configuracion' && (
-            <PlaceholderView 
-              icon={<Settings className="w-16 h-16" />}
-              title={t('settings')}
-              subtitle={t('view_in_development')}
-            />
-          )}
-        </main>
-      </div>
-
-      {/* MODAL */}
-      {modalAbierto && (
-        <PlantDetailModal
-          planta={plantaEditar}
-          onGuardar={handleGuardarPlanta}
-          onCerrar={() => {
-            setModalAbierto(false);
-            setPlantaEditar(null);
-          }}
-        />
-      )}
+    <div className="text-center py-20 animate-fade-in">
+      <div className="text-gray-400 mb-4 flex justify-center">{icon}</div>
+      <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">{title}</h2>
+      <p className="text-gray-600 dark:text-gray-400">{subtitle}</p>
     </div>
   );
 }

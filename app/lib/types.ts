@@ -229,6 +229,7 @@ export const ENFERMEDADES_COMUNES: Enfermedad[] = [
     imagenes: ['https://images.unsplash.com/photo-1523348837708-15d4a09cfac2'],
     severidad: 'medium'
   },
+  
   {
     id: 'root-rot',
     nombre: 'Root Rot',
