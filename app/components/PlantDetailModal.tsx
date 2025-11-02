@@ -1,302 +1,407 @@
 'use client';
 
-import React, { useState } from 'react';
-import { X } from 'lucide-react';
-import { Planta, TIPOS_PLANTA, TipoPlanta, NivelLuz, NivelHumedad } from '../lib/types';
+import React, { useState, useEffect } from 'react';
+import { 
+  X, Droplet, Edit2, Trash2, Plus, MapPin, Calendar,
+  Sun, Thermometer, Wind, Check
+} from 'lucide-react';
+import { Planta, AccionCuidado, TipoAccion } from '../lib/types';
+import { 
+  obtenerBadgeEstadoSalud, 
+  formatearFecha, 
+  obtenerIconoAccion,
+  calcularDiasParaRiego,
+  obtenerEstadoRiego
+} from '../lib/utils';
 
-interface ModalPlantaProps {
-  planta: Planta | null;
-  onGuardar: (planta: Omit<Planta, 'id'>) => void;
-  onCerrar: () => void;
+interface PlantDetailModalProps {
+  planta: Planta;
+  historial: AccionCuidado[];
+  onClose: () => void;
+  onRegar: (id: number) => void;
+  onAgregarAccion: (accion: Omit<AccionCuidado, 'id'>) => void;
+  onEliminarAccion: (id: number) => void;
+  onEditar: (planta: Planta) => void;
 }
 
+export default function PlantDetailModal({
+  planta,
+  historial,
+  onClose,
+  onRegar,
+  onAgregarAccion,
+  onEliminarAccion,
+  onEditar
+}: PlantDetailModalProps) {
+  const [mostrarFormAccion, setMostrarFormAccion] = useState(false);
+  const estadoSalud = obtenerBadgeEstadoSalud(planta.estadoSalud);
+  const diasRiego = calcularDiasParaRiego(planta.ultimoRiego, planta.frecuenciaRiego);
+  const estadoRiego = obtenerEstadoRiego(diasRiego);
 
-export default function ModalPlanta({ planta, onGuardar, onCerrar }: ModalPlantaProps) {
-  const [form, setForm] = useState({
-    nombre: planta?.nombre || '',
-    nombreCientifico: planta?.nombreCientifico || '',
-    tipo: planta?.tipo || ('Monstera' as TipoPlanta),
-    fechaAdquisicion: planta?.fechaAdquisicion || new Date().toISOString().split('T')[0],
-    ubicacion: planta?.ubicacion || '',
-    foto: planta?.foto || '',
-    notas: planta?.notas || '',
-    frecuenciaRiego: planta?.frecuenciaRiego || 7,
-    ultimoRiego: planta?.ultimoRiego || new Date().toISOString(),
-    necesidadLuz: planta?.necesidadLuz || ('medium' as NivelLuz),
-    estadoSalud: planta?.estadoSalud || ('healthy' as const),
-    temperaturaMin: planta?.temperaturaMin || undefined,
-    temperaturaMax: planta?.temperaturaMax || undefined,
-    humedad: planta?.humedad || ('medium' as NivelHumedad),
-  });
+  // Ordenar historial por fecha (más reciente primero)
+  const historialOrdenado = [...historial]
+    .filter(a => a.plantaId === planta.id)
+    .sort((a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime());
+
+  // Prevenir scroll del body cuando el modal está abierto
+  useEffect(() => {
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, []);
+
+  return (
+    <div className="fixed inset-0 z-50 overflow-hidden">
+      {/* Overlay */}
+      <div 
+        className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+        onClick={onClose}
+      />
+
+      {/* Modal Panel */}
+      <div className="absolute right-0 top-0 h-full w-full md:w-[600px] bg-white dark:bg-gray-800 shadow-2xl overflow-y-auto animate-slide-in">
+        {/* Header con imagen */}
+        <div className="relative h-64 bg-gradient-to-br from-green-100 to-emerald-100 dark:from-gray-700 dark:to-gray-600">
+          {planta.foto ? (
+            <img 
+              src={planta.foto} 
+              alt={planta.nombre}
+              className="w-full h-full object-cover"
+            />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center">
+              <div className="text-8xl">🌿</div>
+            </div>
+          )}
+          
+          {/* Overlay gradient */}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+
+          {/* Close button */}
+          <button
+            onClick={onClose}
+            className="absolute top-4 right-4 p-2 bg-white/90 dark:bg-gray-800/90 hover:bg-white dark:hover:bg-gray-800 rounded-full transition-all shadow-lg"
+          >
+            <X className="w-6 h-6 text-gray-700 dark:text-gray-300" />
+          </button>
+
+          {/* Plant name and status */}
+          <div className="absolute bottom-0 left-0 right-0 p-6">
+            <h2 className="text-3xl font-bold text-white mb-2">{planta.nombre}</h2>
+            {planta.nombreCientifico && (
+              <p className="text-white/80 italic mb-3">{planta.nombreCientifico}</p>
+            )}
+            <div className="flex items-center gap-2">
+              <span className={`px-3 py-1 rounded-full text-xs font-semibold ${estadoSalud.bg} flex items-center gap-1.5`}>
+                <span className={`w-2 h-2 rounded-full ${estadoSalud.dot}`}></span>
+                <span className={estadoSalud.color}>{estadoSalud.texto}</span>
+              </span>
+              <span className="px-3 py-1 bg-white/20 backdrop-blur-sm text-white text-xs font-semibold rounded-full">
+                {planta.tipo}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* Content */}
+        <div className="p-6 space-y-6">
+          {/* Quick Actions */}
+          <div className="flex gap-3">
+            <button
+              onClick={() => onRegar(planta.id)}
+              disabled={diasRiego > 0}
+              className={`flex-1 py-3 rounded-xl font-medium transition-all flex items-center justify-center gap-2 ${
+                diasRiego === 0
+                  ? 'bg-blue-600 hover:bg-blue-700 text-white shadow-lg'
+                  : 'bg-gray-100 dark:bg-gray-700 text-gray-400 dark:text-gray-500 cursor-not-allowed'
+              }`}
+            >
+              <Droplet className="w-5 h-5" />
+              {diasRiego === 0 ? 'Water Now' : `Watered (${estadoRiego.texto})`}
+            </button>
+            <button
+              onClick={() => onEditar(planta)}
+              className="px-4 py-3 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-xl transition-all"
+            >
+              <Edit2 className="w-5 h-5" />
+            </button>
+          </div>
+
+          {/* Plant Info */}
+          <div className="bg-gray-50 dark:bg-gray-900/50 rounded-2xl p-5 space-y-4">
+            <h3 className="font-bold text-gray-900 dark:text-white text-lg mb-4">Plant Information</h3>
+            
+            {planta.ubicacion && (
+              <InfoRow icon={<MapPin />} label="Location" value={planta.ubicacion} />
+            )}
+            <InfoRow 
+              icon={<Droplet />} 
+              label="Watering" 
+              value={`Every ${planta.frecuenciaRiego} days`} 
+            />
+            <InfoRow 
+              icon={<Calendar />} 
+              label="Acquired" 
+              value={new Date(planta.fechaAdquisicion).toLocaleDateString()} 
+            />
+            {planta.necesidadLuz && (
+              <InfoRow 
+                icon={<Sun />} 
+                label="Light" 
+                value={planta.necesidadLuz.replace('-', ' ')} 
+              />
+            )}
+            {(planta.temperaturaMin || planta.temperaturaMax) && (
+              <InfoRow 
+                icon={<Thermometer />} 
+                label="Temperature" 
+                value={`${planta.temperaturaMin || '?'}°C - ${planta.temperaturaMax || '?'}°C`} 
+              />
+            )}
+            {planta.humedad && (
+              <InfoRow 
+                icon={<Wind />} 
+                label="Humidity" 
+                value={planta.humedad} 
+              />
+            )}
+          </div>
+
+          {/* Notes */}
+          {planta.notas && (
+            <div>
+              <h3 className="font-bold text-gray-900 dark:text-white text-lg mb-3">Notes</h3>
+              <p className="text-gray-600 dark:text-gray-400 leading-relaxed">
+                {planta.notas}
+              </p>
+            </div>
+          )}
+
+          {/* Care History */}
+          <div>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-bold text-gray-900 dark:text-white text-lg">Care History</h3>
+              <button
+                onClick={() => setMostrarFormAccion(!mostrarFormAccion)}
+                className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm font-medium flex items-center gap-2 transition-all"
+              >
+                <Plus className="w-4 h-4" />
+                Add Care Action
+              </button>
+            </div>
+
+            {/* Form para agregar acción */}
+            {mostrarFormAccion && (
+              <FormAgregarAccion
+                plantaId={planta.id}
+                onAgregar={(accion) => {
+                  onAgregarAccion(accion);
+                  setMostrarFormAccion(false);
+                }}
+                onCancelar={() => setMostrarFormAccion(false)}
+              />
+            )}
+
+            {/* Timeline */}
+            {historialOrdenado.length === 0 ? (
+              <div className="text-center py-12 bg-gray-50 dark:bg-gray-900/50 rounded-2xl">
+                <Calendar className="w-12 h-12 mx-auto text-gray-400 mb-3" />
+                <p className="text-gray-500 dark:text-gray-400">No care history yet</p>
+                <p className="text-sm text-gray-400 dark:text-gray-500">Start tracking your plant care actions</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {historialOrdenado.map((accion, index) => (
+                  <TimelineItem
+                    key={accion.id}
+                    accion={accion}
+                    isLast={index === historialOrdenado.length - 1}
+                    onEliminar={onEliminarAccion}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      <style>{`
+        @keyframes slide-in {
+          from {
+            transform: translateX(100%);
+          }
+          to {
+            transform: translateX(0);
+          }
+        }
+        .animate-slide-in {
+          animation: slide-in 0.3s ease-out;
+        }
+      `}</style>
+    </div>
+  );
+}
+
+// Info Row Component
+function InfoRow({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
+  return (
+    <div className="flex items-center gap-3">
+      <div className="text-gray-400 dark:text-gray-500 flex-shrink-0">
+        {React.cloneElement(icon as React.ReactElement, { className: 'w-5 h-5' })}
+      </div>
+      <div className="flex-1">
+        <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">{label}</p>
+        <p className="text-gray-900 dark:text-white font-medium capitalize">{value}</p>
+      </div>
+    </div>
+  );
+}
+
+// Timeline Item Component
+function TimelineItem({ 
+  accion, 
+  isLast, 
+  onEliminar 
+}: { 
+  accion: AccionCuidado; 
+  isLast: boolean;
+  onEliminar: (id: number) => void;
+}) {
+  return (
+    <div className="relative flex gap-4 group">
+      {/* Timeline line */}
+      {!isLast && (
+        <div className="absolute left-[19px] top-10 bottom-0 w-0.5 bg-gray-200 dark:bg-gray-700" />
+      )}
+
+      {/* Icon */}
+      <div className="flex-shrink-0 w-10 h-10 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center text-xl relative z-10">
+        {obtenerIconoAccion(accion.tipo)}
+      </div>
+
+      {/* Content */}
+      <div className="flex-1 bg-gray-50 dark:bg-gray-900/50 rounded-xl p-4 group-hover:bg-gray-100 dark:group-hover:bg-gray-900/70 transition-colors">
+        <div className="flex items-start justify-between">
+          <div className="flex-1">
+            <p className="font-semibold text-gray-900 dark:text-white capitalize mb-1">
+              {accion.tipo.replace('-', ' ')}
+            </p>
+            <p className="text-sm text-gray-500 dark:text-gray-400">
+              {formatearFecha(accion.fecha)}
+            </p>
+            {accion.cantidad && (
+              <p className="text-sm text-gray-600 dark:text-gray-300 mt-2">
+                {accion.cantidad}
+              </p>
+            )}
+            {accion.notas && (
+              <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
+                {accion.notas}
+              </p>
+            )}
+          </div>
+          <button
+            onClick={() => {
+              if (window.confirm('¿Eliminar esta acción del historial?')) {
+                onEliminar(accion.id);
+              }
+            }}
+            className="opacity-0 group-hover:opacity-100 p-2 hover:bg-red-100 dark:hover:bg-red-900/20 text-red-600 dark:text-red-400 rounded-lg transition-all"
+          >
+            <Trash2 className="w-4 h-4" />
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Form para agregar acción
+function FormAgregarAccion({
+  plantaId,
+  onAgregar,
+  onCancelar
+}: {
+  plantaId: number;
+  onAgregar: (accion: Omit<AccionCuidado, 'id'>) => void;
+  onCancelar: () => void;
+}) {
+  const [tipo, setTipo] = useState<TipoAccion>('riego');
+  const [cantidad, setCantidad] = useState('');
+  const [notas, setNotas] = useState('');
 
   const handleSubmit = () => {
-    if (!form.nombre.trim()) {
-      alert('Plant name is required');
-      return;
-    }
-    onGuardar(form);
-  };
-
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setForm({...form, foto: reader.result as string});
-      };
-      reader.readAsDataURL(file);
-    }
+    onAgregar({
+      plantaId,
+      tipo,
+      fecha: new Date().toISOString(),
+      cantidad: cantidad || undefined,
+      notas: notas || undefined
+    });
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 animate-fade-in">
-      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-        {/* Header */}
-        <div className="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 p-6 flex items-center justify-between z-10">
-          <h2 className="text-2xl font-bold text-gray-800 dark:text-white">
-            {planta ? 'Edit Plant' : 'New Plant'}
-          </h2>
-          <button 
-            onClick={onCerrar} 
-            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
-          >
-            <X className="w-6 h-6 text-gray-600 dark:text-gray-400" />
-          </button>
-        </div>
+    <div className="bg-blue-50 dark:bg-blue-900/20 border-2 border-blue-200 dark:border-blue-800 rounded-xl p-4 mb-4 space-y-3">
+      <div>
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+          Action Type
+        </label>
+        <select
+          value={tipo}
+          onChange={(e) => setTipo(e.target.value as TipoAccion)}
+          className="w-full px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none"
+        >
+          <option value="riego">💧 Watered</option>
+          <option value="fertilizacion">🌱 Fertilized</option>
+          <option value="poda">✂️ Pruned</option>
+          <option value="trasplante">🪴 Repotted</option>
+          <option value="tratamiento">💊 Pest Control</option>
+          <option value="movimiento">☀️ Moved</option>
+          <option value="revision">🔍 Inspection</option>
+        </select>
+      </div>
 
-        {/* Formulario */}
-        <div className="p-6 space-y-5">
-          {/* Nombre */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Name *
-            </label>
-            <input
-              type="text"
-              value={form.nombre}
-              onChange={(e) => setForm({...form, nombre: e.target.value})}
-              className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-white focus:ring-2 focus:ring-green-500 outline-none"
-              placeholder="e.g., My Beautiful Monstera"
-            />
-          </div>
+      <div>
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+          Amount / Details (optional)
+        </label>
+        <input
+          type="text"
+          value={cantidad}
+          onChange={(e) => setCantidad(e.target.value)}
+          placeholder="e.g., 2 cups of water"
+          className="w-full px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none"
+        />
+      </div>
 
-          {/* Nombre Científico */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Scientific Name (optional)
-            </label>
-            <input
-              type="text"
-              value={form.nombreCientifico}
-              onChange={(e) => setForm({...form, nombreCientifico: e.target.value})}
-              className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-white focus:ring-2 focus:ring-green-500 outline-none"
-              placeholder="e.g., Monstera deliciosa"
-            />
-          </div>
+      <div>
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+          Notes (optional)
+        </label>
+        <textarea
+          value={notas}
+          onChange={(e) => setNotas(e.target.value)}
+          placeholder="Any additional notes..."
+          rows={2}
+          className="w-full px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none resize-none"
+        />
+      </div>
 
-          {/* Tipo y Ubicación */}
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Type
-              </label>
-              <select
-                value={form.tipo}
-                onChange={(e) => setForm({...form, tipo: e.target.value as TipoPlanta})}
-                className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-white focus:ring-2 focus:ring-green-500 outline-none"
-              >
-                {TIPOS_PLANTA.map(tipo => (
-                  <option key={tipo} value={tipo}>{tipo}</option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Location
-              </label>
-              <input
-                type="text"
-                value={form.ubicacion}
-                onChange={(e) => setForm({...form, ubicacion: e.target.value})}
-                className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-white focus:ring-2 focus:ring-green-500 outline-none"
-                placeholder="e.g., Living Room"
-              />
-            </div>
-          </div>
-
-          {/* Fecha de Adquisición y Frecuencia de Riego */}
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Acquisition Date
-              </label>
-              <input
-                type="date"
-                value={form.fechaAdquisicion}
-                onChange={(e) => setForm({...form, fechaAdquisicion: e.target.value})}
-                className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-white focus:ring-2 focus:ring-green-500 outline-none"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Water Every (days)
-              </label>
-              <input
-                type="number"
-                value={form.frecuenciaRiego}
-                onChange={(e) => setForm({...form, frecuenciaRiego: parseInt(e.target.value) || 1})}
-                className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-white focus:ring-2 focus:ring-green-500 outline-none"
-                min="1"
-              />
-            </div>
-          </div>
-
-          {/* Necesidades de Luz y Humedad */}
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Light Needs
-              </label>
-              <select
-                value={form.necesidadLuz}
-                onChange={(e) => setForm({...form, necesidadLuz: e.target.value as NivelLuz})}
-                className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-white focus:ring-2 focus:ring-green-500 outline-none"
-              >
-                <option value="low">Low Light</option>
-                <option value="medium">Medium Light</option>
-                <option value="bright-indirect">Bright Indirect</option>
-                <option value="direct">Direct Sunlight</option>
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Humidity
-              </label>
-              <select
-                value={form.humedad}
-                onChange={(e) => setForm({...form, humedad: e.target.value as NivelHumedad})}
-                className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-white focus:ring-2 focus:ring-green-500 outline-none"
-              >
-                <option value="low">Low</option>
-                <option value="medium">Medium</option>
-                <option value="high">High</option>
-              </select>
-            </div>
-          </div>
-
-          {/* Temperatura (opcional) */}
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Min Temperature (°C)
-              </label>
-              <input
-                type="number"
-                value={form.temperaturaMin || ''}
-                onChange={(e) => setForm({...form, temperaturaMin: e.target.value ? parseInt(e.target.value) : undefined})}
-                className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-white focus:ring-2 focus:ring-green-500 outline-none"
-                placeholder="Optional"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Max Temperature (°C)
-              </label>
-              <input
-                type="number"
-                value={form.temperaturaMax || ''}
-                onChange={(e) => setForm({...form, temperaturaMax: e.target.value ? parseInt(e.target.value) : undefined})}
-                className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-white focus:ring-2 focus:ring-green-500 outline-none"
-                placeholder="Optional"
-              />
-            </div>
-          </div>
-
-          {/* Foto */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Plant Photo
-            </label>
-            
-            {/* Preview de la imagen */}
-            {form.foto && (
-              <div className="mb-3 relative">
-                <img 
-                  src={form.foto} 
-                  alt="Preview" 
-                  className="w-full h-48 object-cover rounded-lg"
-                />
-                <button
-                  type="button"
-                  onClick={() => setForm({...form, foto: ''})}
-                  className="absolute top-2 right-2 bg-red-500 text-white p-2 rounded-full hover:bg-red-600"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
-            )}
-
-            {/* Botón para subir imagen */}
-            <div className="flex gap-2">
-              <label className="flex-1 cursor-pointer">
-                <div className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-4 text-center hover:border-green-500 transition-colors">
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={handleImageUpload}
-                    className="hidden"
-                  />
-                  <div className="text-gray-600 dark:text-gray-400">
-                    📷 Upload photo from device
-                  </div>
-                </div>
-              </label>
-            </div>
-
-            {/* Input de URL alternativo */}
-            <div className="mt-2">
-              <input
-                type="url"
-                value={form.foto.startsWith('data:') ? '' : form.foto}
-                onChange={(e) => setForm({...form, foto: e.target.value})}
-                className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-white focus:ring-2 focus:ring-green-500 outline-none"
-                placeholder="Or paste an image URL"
-              />
-            </div>
-          </div>
-
-          {/* Notas */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Personal Notes
-            </label>
-            <textarea
-              value={form.notas}
-              onChange={(e) => setForm({...form, notas: e.target.value})}
-              className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-white focus:ring-2 focus:ring-green-500 outline-none resize-none"
-              rows={3}
-              placeholder="e.g., Likes direct sunlight, water in the mornings..."
-            />
-          </div>
-
-          {/* Botones */}
-          <div className="flex gap-3 pt-4">
-            <button
-              onClick={onCerrar}
-              className="flex-1 px-6 py-3 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors font-medium"
-              type="button"
-            >
-              Cancel
-            </button>
-            <button
-              onClick={handleSubmit}
-              className="flex-1 px-6 py-3 rounded-lg bg-green-600 hover:bg-green-700 text-white font-medium transition-all transform hover:scale-105 shadow-lg shadow-green-600/30"
-              type="button"
-            >
-              {planta ? 'Save Changes' : 'Add Plant'}
-            </button>
-          </div>
-        </div>
+      <div className="flex gap-2">
+        <button
+          onClick={onCancelar}
+          className="flex-1 px-4 py-2 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg font-medium transition-all"
+        >
+          Cancel
+        </button>
+        <button
+          onClick={handleSubmit}
+          className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-all flex items-center justify-center gap-2"
+        >
+          <Check className="w-4 h-4" />
+          Add Action
+        </button>
       </div>
     </div>
   );
