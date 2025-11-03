@@ -1,0 +1,184 @@
+{
+  "app": {
+    "title": "Diario de Plantas",
+    "version": "v2.0 Pro",
+    "description": "Aplicación profesional para el cuidado de plantas"
+  },
+  "nav": {
+    "dashboard": "Panel",
+    "myPlants": "Mis Plantas",
+    "calendar": "Calendario",
+    "database": "Base de Datos",
+    "settings": "Configuración",
+    "collapse": "Contraer",
+    "expand": "Expandir"
+  },
+  "landing": {
+    "badge": "La forma más inteligente de cuidar tus plantas",
+    "title": "Tu jardín merece",
+    "titleHighlight": "la mejor atención",
+    "subtitle": "Registra, monitorea y recibe recordatorios inteligentes para mantener cada una de tus plantas saludables y florecientes.",
+    "cta": "Comenzar Gratis",
+    "users": "+1,000 plantas felices",
+    "feature1Title": "Organiza con Amor",
+    "feature1Desc": "Gestiona todas tus plantas en un solo lugar. Cada planta tiene su propio perfil con foto, notas y cuidados personalizados.",
+    "feature2Title": "Recordatorios Inteligentes",
+    "feature2Desc": "Nunca más olvides cuándo regar. Alertas visuales te indican exactamente qué plantas necesitan atención hoy.",
+    "feature3Title": "Seguimiento Visual",
+    "feature3Desc": "Calendario intuitivo con todos tus cuidados programados. Ve de un vistazo qué necesita tu jardín esta semana.",
+    "stat1": "Gratis",
+    "stat2": "Sin Límites",
+    "stat3": "Privado",
+    "stat4": "Anuncios",
+    "stat1Label": "100%",
+    "stat2Label": "Plantas",
+    "stat3Label": "100%",
+    "stat4Label": "0"
+  },
+  "plant": {
+    "name": "Nombre",
+    "scientificName": "Nombre Científico",
+    "type": "Tipo",
+    "location": "Ubicación",
+    "acquisitionDate": "Fecha de Adquisición",
+    "waterEvery": "Regar cada {{days}} días",
+    "waterEveryDays": "Regar Cada (días)",
+    "lastWatered": "Último riego: {{date}}",
+    "addPlant": "Agregar Planta",
+    "editPlant": "Editar Planta",
+    "deletePlant": "Eliminar Planta",
+    "deleteConfirm": "¿Estás seguro de que quieres eliminar esta planta?",
+    "waterNow": "Regar Ahora",
+    "watered": "Regada",
+    "photo": "Foto de la Planta",
+    "uploadPhoto": "Subir foto desde dispositivo",
+    "pasteUrl": "O pegar URL de imagen",
+    "notes": "Notas Personales",
+    "notesPlaceholder": "ej: Le gusta el sol directo, regar por las mañanas...",
+    "optional": "opcional",
+    "required": "requerido",
+    "lightNeeds": "Necesidades de Luz",
+    "humidity": "Humedad",
+    "minTemp": "Temperatura Mínima (°C)",
+    "maxTemp": "Temperatura Máxima (°C)",
+    "noPlants": "Aún no hay plantas",
+    "addFirstPlant": "Agrega tu primera planta para comenzar",
+    "searchPlaceholder": "Buscar plantas...",
+    "noPlantsFound": "No se encontraron plantas",
+    "adjustSearch": "Intenta ajustar tu búsqueda"
+  },
+  "plantInfo": {
+    "information": "Información de la Planta",
+    "acquired": "Adquirida",
+    "light": "Luz",
+    "temperature": "Temperatura",
+    "careHistory": "Historial de Cuidados",
+    "addCareAction": "Agregar Acción de Cuidado",
+    "noCareHistory": "Sin historial de cuidados aún",
+    "startTracking": "Comienza a registrar las acciones de cuidado de tu planta"
+  },
+  "stats": {
+    "totalPlants": "Plantas Totales",
+    "needsWater": "Necesitan Agua",
+    "healthy": "Saludables",
+    "needsAttention": "Necesitan Atención",
+    "active": "Activas",
+    "today": "Hoy",
+    "checkNow": "Ver ahora",
+    "yourPlants": "Tus Plantas",
+    "viewAll": "Ver Todas las {{count}} Plantas"
+  },
+  "health": {
+    "healthy": "Saludable",
+    "needsAttention": "Necesita Atención",
+    "critical": "Crítico"
+  },
+  "watering": {
+    "waterToday": "Regar Hoy",
+    "waterTomorrow": "Regar Mañana",
+    "waterInDays": "Regar en {{days}} días",
+    "waterIn1Day": "Regar en 1 día"
+  },
+  "calendar": {
+    "title": "Calendario de Cuidados",
+    "waterToday": "🔴 Regar Hoy",
+    "next7Days": "🟡 Próximos 7 Días",
+    "later": "🟢 Más Adelante",
+    "noScheduled": "No hay cuidados programados",
+    "in": "En",
+    "day": "día",
+    "days": "días"
+  },
+  "careActions": {
+    "watering": "💧 Regado",
+    "fertilization": "🌱 Fertilizado",
+    "pruning": "✂️ Podado",
+    "repotting": "🪴 Trasplantado",
+    "treatment": "💊 Control de Plagas",
+    "movement": "☀️ Movido",
+    "inspection": "🔍 Inspección",
+    "actionType": "Tipo de Acción",
+    "amountDetails": "Cantidad / Detalles",
+    "amountPlaceholder": "ej: 2 tazas de agua",
+    "notesOptional": "Notas (opcional)",
+    "notesPlaceholder": "Notas adicionales...",
+    "deleteAction": "¿Eliminar esta acción del historial?"
+  },
+  "light": {
+    "low": "Luz Baja",
+    "medium": "Luz Media",
+    "brightIndirect": "Luz Indirecta Brillante",
+    "direct": "Luz Solar Directa"
+  },
+  "humidityLevels": {
+    "low": "Baja",
+    "medium": "Media",
+    "high": "Alta"
+  },
+  "plantTypes": {
+    "Monstera": "Monstera",
+    "Ficus": "Ficus",
+    "Pothos": "Pothos",
+    "Snake Plant": "Planta Serpiente",
+    "ZZ Plant": "Planta ZZ",
+    "Philodendron": "Filodendro",
+    "Calathea": "Calathea",
+    "Succulent": "Suculenta",
+    "Cactus": "Cactus",
+    "Orchid": "Orquídea",
+    "Fern": "Helecho",
+    "Palm": "Palmera",
+    "Other": "Otra"
+  },
+  "actions": {
+    "save": "Guardar",
+    "saveChanges": "Guardar Cambios",
+    "cancel": "Cancelar",
+    "delete": "Eliminar",
+    "edit": "Editar",
+    "add": "Agregar",
+    "close": "Cerrar",
+    "water": "Regar"
+  },
+  "common": {
+    "loading": "Cargando...",
+    "error": "Error",
+    "success": "Éxito",
+    "darkMode": "Modo oscuro",
+    "lightMode": "Modo claro",
+    "language": "Idioma"
+  },
+  "validation": {
+    "nameRequired": "El nombre de la planta es requerido",
+    "invalidFrequency": "La frecuencia de riego debe ser al menos 1 día",
+    "invalidUrl": "URL de imagen inválida"
+  },
+  "database": {
+    "title": "Base de Datos de Plantas",
+    "comingSoon": "Próximamente: Explora guías de cuidado de plantas e información sobre enfermedades"
+  },
+  "settings": {
+    "title": "Configuración",
+    "comingSoon": "Próximamente: Personaliza tu experiencia"
+  }
+}

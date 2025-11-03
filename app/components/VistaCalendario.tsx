@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { Sprout, Droplet } from 'lucide-react';
 import { Planta } from '../lib/types';
 import { calcularDiasParaRiego } from '../lib/utils';
@@ -16,6 +17,8 @@ interface PlantaConFecha extends Planta {
 }
 
 export default function VistaCalendario({ plantas, onRegar }: VistaCalendarioProps) {
+  const { t } = useTranslation();
+  
   const proximosCuidados = plantas
     .map(p => {
       const dias = calcularDiasParaRiego(p.ultimoRiego, p.frecuenciaRiego || 7);
@@ -44,7 +47,7 @@ export default function VistaCalendario({ plantas, onRegar }: VistaCalendarioPro
       </h3>
       {plantas.length === 0 ? (
         <p className="text-gray-500 dark:text-gray-400 italic">
-          No hay cuidados programados
+          {t('calendar.noScheduled')}
         </p>
       ) : (
         <div className="space-y-3">
@@ -63,8 +66,9 @@ export default function VistaCalendario({ plantas, onRegar }: VistaCalendarioPro
                   </h4>
                   <p className="text-sm text-gray-600 dark:text-gray-400">
                     {p.diasRestantes === 0 
-                      ? 'Hoy' 
-                      : `En ${p.diasRestantes} día${p.diasRestantes > 1 ? 's' : ''}`}
+                      ? t('stats.today')
+                      : t('calendar.in') + ' ' + p.diasRestantes + ' ' + (p.diasRestantes === 1 ? t('calendar.day') : t('calendar.days'))
+                    }
                   </p>
                 </div>
               </div>
@@ -73,7 +77,7 @@ export default function VistaCalendario({ plantas, onRegar }: VistaCalendarioPro
                 className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 flex-shrink-0"
               >
                 <Droplet className="w-4 h-4" />
-                <span className="hidden sm:inline">Regar</span>
+                <span className="hidden sm:inline">{t('actions.water')}</span>
               </button>
             </div>
           ))}
@@ -85,23 +89,23 @@ export default function VistaCalendario({ plantas, onRegar }: VistaCalendarioPro
   return (
     <div className="animate-fade-in">
       <h2 className="text-3xl font-bold text-gray-800 dark:text-white mb-6">
-        Calendario de Cuidados
+        {t('calendar.title')}
       </h2>
       
       <Seccion 
-        titulo="🔴 Regar Hoy" 
+        titulo={t('calendar.waterToday')} 
         plantas={cuidadosHoy} 
         color="text-red-600 dark:text-red-400" 
       />
       
       <Seccion 
-        titulo="🟡 Próximos 7 Días" 
+        titulo={t('calendar.next7Days')} 
         plantas={proximamente} 
         color="text-orange-600 dark:text-orange-400" 
       />
       
       <Seccion 
-        titulo="🟢 Más Adelante" 
+        titulo={t('calendar.later')} 
         plantas={despues} 
         color="text-green-600 dark:text-green-400" 
       />

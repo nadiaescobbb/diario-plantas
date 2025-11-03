@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { Droplet, Edit2, Trash2, MapPin, Calendar as CalendarIcon } from 'lucide-react';
 import { Planta, EstadoSalud } from '../lib/types';
 import { 
@@ -25,8 +26,9 @@ export default function PlantCard({
   onEliminar,
   onClick 
 }: PlantCardProps) {
+  const { t } = useTranslation();
   const diasRiego = calcularDiasParaRiego(planta.ultimoRiego, planta.frecuenciaRiego);
-  const estadoRiego = obtenerEstadoRiego(diasRiego);
+  const estadoRiego = obtenerEstadoRiego(diasRiego, t);
   
   // Asegurar que estadoSalud sea válido
   const estadoSaludValido: EstadoSalud = 
@@ -36,7 +38,7 @@ export default function PlantCard({
       ? planta.estadoSalud 
       : 'healthy';
   
-  const estadoSalud = obtenerBadgeEstadoSalud(estadoSaludValido);
+  const estadoSalud = obtenerBadgeEstadoSalud(estadoSaludValido, t);
 
   return (
     <div 
@@ -83,7 +85,7 @@ export default function PlantCard({
             </p>
           )}
           <span className="inline-block mt-2 px-2 py-1 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 text-xs font-medium rounded-full">
-            {planta.tipo}
+            {t(`plantTypes.${planta.tipo}`)}
           </span>
         </div>
 
@@ -97,11 +99,11 @@ export default function PlantCard({
           )}
           <div className="flex items-center gap-2">
             <Droplet className="w-4 h-4 flex-shrink-0" />
-            <span>Water every {planta.frecuenciaRiego} days</span>
+            <span>{t('plant.waterEvery', { days: planta.frecuenciaRiego })}</span>
           </div>
           <div className="flex items-center gap-2">
             <CalendarIcon className="w-4 h-4 flex-shrink-0" />
-            <span>Last watered: {formatearFecha(planta.ultimoRiego)}</span>
+            <span>{t('plant.lastWatered', { date: formatearFecha(planta.ultimoRiego, t) })}</span>
           </div>
         </div>
 
@@ -129,7 +131,7 @@ export default function PlantCard({
           >
             <Droplet className="w-4 h-4" />
             <span className="hidden sm:inline">
-              {diasRiego === 0 ? 'Water Now' : 'Watered'}
+              {diasRiego === 0 ? t('plant.waterNow') : t('plant.watered')}
             </span>
           </button>
           <button
@@ -139,7 +141,7 @@ export default function PlantCard({
             }}
             className="p-2.5 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-600 dark:text-gray-300 rounded-xl transition-all"
             type="button"
-            title="Edit plant"
+            title={t('plant.editPlant')}
           >
             <Edit2 className="w-4 h-4" />
           </button>
@@ -150,7 +152,7 @@ export default function PlantCard({
             }}
             className="p-2.5 bg-red-50 dark:bg-red-900/20 hover:bg-red-100 dark:hover:bg-red-900/30 text-red-600 dark:text-red-400 rounded-xl transition-all"
             type="button"
-            title="Delete plant"
+            title={t('plant.deletePlant')}
           >
             <Trash2 className="w-4 h-4" />
           </button>

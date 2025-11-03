@@ -1,0 +1,185 @@
+
+{
+  "app": {
+    "title": "Plant Diary",
+    "version": "v2.0 Pro",
+    "description": "Professional app for plant care management"
+  },
+  "nav": {
+    "dashboard": "Dashboard",
+    "myPlants": "My Plants",
+    "calendar": "Calendar",
+    "database": "Plant Database",
+    "settings": "Settings",
+    "collapse": "Collapse",
+    "expand": "Expand"
+  },
+  "landing": {
+    "badge": "The smartest way to care for your plants",
+    "title": "Your garden deserves",
+    "titleHighlight": "the best care",
+    "subtitle": "Register, monitor and receive smart reminders to keep each of your plants healthy and thriving.",
+    "cta": "Start Free",
+    "users": "+1,000 happy plants",
+    "feature1Title": "Organize with Love",
+    "feature1Desc": "Manage all your plants in one place. Each plant has its own profile with photo, notes and personalized care.",
+    "feature2Title": "Smart Reminders",
+    "feature2Desc": "Never forget when to water again. Visual alerts tell you exactly which plants need attention today.",
+    "feature3Title": "Visual Tracking",
+    "feature3Desc": "Intuitive calendar with all your scheduled care. See at a glance what your garden needs this week.",
+    "stat1": "Free",
+    "stat2": "Unlimited",
+    "stat3": "Private",
+    "stat4": "Ads",
+    "stat1Label": "100%",
+    "stat2Label": "Plants",
+    "stat3Label": "100%",
+    "stat4Label": "0"
+  },
+  "plant": {
+    "name": "Name",
+    "scientificName": "Scientific Name",
+    "type": "Type",
+    "location": "Location",
+    "acquisitionDate": "Acquisition Date",
+    "waterEvery": "Water every {{days}} days",
+    "waterEveryDays": "Water Every (days)",
+    "lastWatered": "Last watered: {{date}}",
+    "addPlant": "Add Plant",
+    "editPlant": "Edit Plant",
+    "deletePlant": "Delete Plant",
+    "deleteConfirm": "Are you sure you want to delete this plant?",
+    "waterNow": "Water Now",
+    "watered": "Watered",
+    "photo": "Plant Photo",
+    "uploadPhoto": "Upload photo from device",
+    "pasteUrl": "Or paste an image URL",
+    "notes": "Personal Notes",
+    "notesPlaceholder": "e.g., Likes direct sunlight, water in the mornings...",
+    "optional": "optional",
+    "required": "required",
+    "lightNeeds": "Light Needs",
+    "humidity": "Humidity",
+    "minTemp": "Min Temperature (°C)",
+    "maxTemp": "Max Temperature (°C)",
+    "noPlants": "No plants yet",
+    "addFirstPlant": "Add your first plant to get started",
+    "searchPlaceholder": "Search plants...",
+    "noPlantsFound": "No plants found",
+    "adjustSearch": "Try adjusting your search"
+  },
+  "plantInfo": {
+    "information": "Plant Information",
+    "acquired": "Acquired",
+    "light": "Light",
+    "temperature": "Temperature",
+    "careHistory": "Care History",
+    "addCareAction": "Add Care Action",
+    "noCareHistory": "No care history yet",
+    "startTracking": "Start tracking your plant care actions"
+  },
+  "stats": {
+    "totalPlants": "Total Plants",
+    "needsWater": "Needs Water",
+    "healthy": "Healthy",
+    "needsAttention": "Needs Attention",
+    "active": "Active",
+    "today": "Today",
+    "checkNow": "Check now",
+    "yourPlants": "Your Plants",
+    "viewAll": "View All {{count}} Plants"
+  },
+  "health": {
+    "healthy": "Healthy",
+    "needsAttention": "Needs Attention",
+    "critical": "Critical"
+  },
+  "watering": {
+    "waterToday": "Water Today",
+    "waterTomorrow": "Water Tomorrow",
+    "waterInDays": "Water in {{days}} days",
+    "waterIn1Day": "Water in 1 day"
+  },
+  "calendar": {
+    "title": "Care Calendar",
+    "waterToday": "🔴 Water Today",
+    "next7Days": "🟡 Next 7 Days",
+    "later": "🟢 Later",
+    "noScheduled": "No care scheduled",
+    "in": "In",
+    "day": "day",
+    "days": "days"
+  },
+  "careActions": {
+    "watering": "💧 Watered",
+    "fertilization": "🌱 Fertilized",
+    "pruning": "✂️ Pruned",
+    "repotting": "🪴 Repotted",
+    "treatment": "💊 Pest Control",
+    "movement": "☀️ Moved",
+    "inspection": "🔍 Inspection",
+    "actionType": "Action Type",
+    "amountDetails": "Amount / Details",
+    "amountPlaceholder": "e.g., 2 cups of water",
+    "notesOptional": "Notes (optional)",
+    "notesPlaceholder": "Any additional notes...",
+    "deleteAction": "Delete this action from history?"
+  },
+  "light": {
+    "low": "Low Light",
+    "medium": "Medium Light",
+    "brightIndirect": "Bright Indirect",
+    "direct": "Direct Sunlight"
+  },
+  "humidityLevels": {
+    "low": "Low",
+    "medium": "Medium",
+    "high": "High"
+  },
+  "plantTypes": {
+    "Monstera": "Monstera",
+    "Ficus": "Ficus",
+    "Pothos": "Pothos",
+    "Snake Plant": "Snake Plant",
+    "ZZ Plant": "ZZ Plant",
+    "Philodendron": "Philodendron",
+    "Calathea": "Calathea",
+    "Succulent": "Succulent",
+    "Cactus": "Cactus",
+    "Orchid": "Orchid",
+    "Fern": "Fern",
+    "Palm": "Palm",
+    "Other": "Other"
+  },
+  "actions": {
+    "save": "Save",
+    "saveChanges": "Save Changes",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "add": "Add",
+    "close": "Close",
+    "water": "Water"
+  },
+  "common": {
+    "loading": "Loading...",
+    "error": "Error",
+    "success": "Success",
+    "darkMode": "Dark mode",
+    "lightMode": "Light mode",
+    "language": "Language"
+  },
+  "validation": {
+    "nameRequired": "Plant name is required",
+    "invalidFrequency": "Watering frequency must be at least 1 day",
+    "invalidUrl": "Invalid image URL"
+  },
+  "database": {
+    "title": "Plant Database",
+    "comingSoon": "Coming soon: Browse plant care guides and disease information"
+  },
+  "settings": {
+    "title": "Settings",
+    "comingSoon": "Coming soon: Customize your experience"
+  }
+}

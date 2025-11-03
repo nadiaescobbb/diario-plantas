@@ -1,7 +1,3 @@
-// ============================================
-// UTILIDADES CONSOLIDADAS - DIARIO DE PLANTAS
-// ============================================
-
 import { Planta, EstadoSalud, AccionCuidado } from './types';
 
 // ===== CÁLCULOS DE RIEGO =====
@@ -17,10 +13,10 @@ export const calcularDiasParaRiego = (
   return Math.max(0, frecuencia - diff);
 };
 
-export const obtenerEstadoRiego = (dias: number) => {
+export const obtenerEstadoRiego = (dias: number, t: any) => {
   if (dias === 0) {
     return { 
-      texto: "Water Today", 
+      texto: t('watering.waterToday'),
       color: "text-red-600 dark:text-red-400", 
       bg: "bg-red-50 dark:bg-red-900/20",
       badge: "bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400"
@@ -28,7 +24,7 @@ export const obtenerEstadoRiego = (dias: number) => {
   }
   if (dias === 1) {
     return { 
-      texto: "Water Tomorrow", 
+      texto: t('watering.waterTomorrow'),
       color: "text-orange-600 dark:text-orange-400", 
       bg: "bg-orange-50 dark:bg-orange-900/20",
       badge: "bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400"
@@ -36,14 +32,14 @@ export const obtenerEstadoRiego = (dias: number) => {
   }
   if (dias <= 3) {
     return { 
-      texto: `Water in ${dias} days`, 
+      texto: t('watering.waterInDays', { days: dias }),
       color: "text-yellow-600 dark:text-yellow-400", 
       bg: "bg-yellow-50 dark:bg-yellow-900/20",
       badge: "bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400"
     };
   }
   return { 
-    texto: `Water in ${dias} days`, 
+    texto: t('watering.waterInDays', { days: dias }),
     color: "text-green-600 dark:text-green-400", 
     bg: "bg-green-50 dark:bg-green-900/20",
     badge: "bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400"
@@ -55,12 +51,10 @@ export const obtenerEstadoRiego = (dias: number) => {
 export const determinarEstadoSalud = (planta: Planta): EstadoSalud => {
   const diasParaRiego = calcularDiasParaRiego(planta.ultimoRiego, planta.frecuenciaRiego);
   
-  // Si necesita riego urgente
   if (diasParaRiego === 0) {
     return 'needs-attention';
   }
   
-  // Si está atrasado en riego (días negativos)
   if (diasParaRiego < 0) {
     return 'critical';
   }
@@ -68,25 +62,25 @@ export const determinarEstadoSalud = (planta: Planta): EstadoSalud => {
   return 'healthy';
 };
 
-export const obtenerBadgeEstadoSalud = (estado: EstadoSalud) => {
+export const obtenerBadgeEstadoSalud = (estado: EstadoSalud, t: any) => {
   switch (estado) {
     case 'healthy':
       return {
-        texto: 'Healthy',
+        texto: t('health.healthy'),
         color: 'text-green-700 dark:text-green-400',
         bg: 'bg-green-100 dark:bg-green-900/30',
         dot: 'bg-green-500'
       };
     case 'needs-attention':
       return {
-        texto: 'Needs Attention',
+        texto: t('health.needsAttention'),
         color: 'text-yellow-700 dark:text-yellow-400',
         bg: 'bg-yellow-100 dark:bg-yellow-900/30',
         dot: 'bg-yellow-500'
       };
     case 'critical':
       return {
-        texto: 'Critical',
+        texto: t('health.critical'),
         color: 'text-red-700 dark:text-red-400',
         bg: 'bg-red-100 dark:bg-red-900/30',
         dot: 'bg-red-500'
@@ -120,7 +114,7 @@ export const calcularEstadisticas = (plantas: Planta[]) => {
 
 // ===== FORMATEO DE FECHAS =====
 
-export const formatearFecha = (fecha: string): string => {
+export const formatearFecha = (fecha: string, t: any): string => {
   const date = new Date(fecha);
   const hoy = new Date();
   const ayer = new Date(hoy);
@@ -128,12 +122,12 @@ export const formatearFecha = (fecha: string): string => {
 
   // Si es hoy
   if (date.toDateString() === hoy.toDateString()) {
-    return 'Today';
+    return t ? t('stats.today') : 'Today';
   }
   
   // Si es ayer
   if (date.toDateString() === ayer.toDateString()) {
-    return 'Yesterday';
+    return t ? (t.language === 'es' ? 'Ayer' : 'Yesterday') : 'Yesterday';
   }
 
   // Calcular días atrás
@@ -141,15 +135,19 @@ export const formatearFecha = (fecha: string): string => {
   const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
   
   if (diffDays < 7) {
-    return `${diffDays} days ago`;
+    const daysText = t ? (t.language === 'es' ? 'días' : 'days') : 'days';
+    const agoText = t ? (t.language === 'es' ? 'hace' : 'ago') : 'ago';
+    return t ? (t.language === 'es' ? `hace ${diffDays} días` : `${diffDays} days ago`) : `${diffDays} days ago`;
   }
   
   if (diffDays < 30) {
     const weeks = Math.floor(diffDays / 7);
-    return `${weeks} week${weeks > 1 ? 's' : ''} ago`;
+    const weekText = weeks > 1 ? (t?.language === 'es' ? 'semanas' : 'weeks') : (t?.language === 'es' ? 'semana' : 'week');
+    const agoText = t?.language === 'es' ? 'hace' : 'ago';
+    return t?.language === 'es' ? `hace ${weeks} ${weekText}` : `${weeks} ${weekText} ago`;
   }
 
-  return date.toLocaleDateString();
+  return date.toLocaleDateString(t?.language === 'es' ? 'es-ES' : 'en-US');
 };
 
 // ===== ICONOS Y VISUALES =====
@@ -213,19 +211,19 @@ export const esUrlValida = (url: string): boolean => {
   }
 };
 
-export const validarPlanta = (planta: Partial<Planta>): string[] => {
+export const validarPlanta = (planta: Partial<Planta>, t: any): string[] => {
   const errores: string[] = [];
   
   if (!planta.nombre?.trim()) {
-    errores.push('Plant name is required');
+    errores.push(t('validation.nameRequired'));
   }
   
   if (planta.frecuenciaRiego && planta.frecuenciaRiego < 1) {
-    errores.push('Watering frequency must be at least 1 day');
+    errores.push(t('validation.invalidFrequency'));
   }
   
   if (planta.foto && !planta.foto.startsWith('data:') && !esUrlValida(planta.foto)) {
-    errores.push('Invalid image URL');
+    errores.push(t('validation.invalidUrl'));
   }
   
   return errores;

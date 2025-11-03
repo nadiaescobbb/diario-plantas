@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { 
   X, Droplet, Edit2, Trash2, Plus, MapPin, Calendar,
   Sun, Thermometer, Wind, Check
@@ -33,10 +34,11 @@ export default function PlantDetailModal({
   onEliminarAccion,
   onEditar
 }: PlantDetailModalProps) {
+  const { t } = useTranslation();
   const [mostrarFormAccion, setMostrarFormAccion] = useState(false);
-  const estadoSalud = obtenerBadgeEstadoSalud(planta.estadoSalud);
+  const estadoSalud = obtenerBadgeEstadoSalud(planta.estadoSalud, t);
   const diasRiego = calcularDiasParaRiego(planta.ultimoRiego, planta.frecuenciaRiego);
-  const estadoRiego = obtenerEstadoRiego(diasRiego);
+  const estadoRiego = obtenerEstadoRiego(diasRiego, t);
 
   // Ordenar historial por fecha (más reciente primero)
   const historialOrdenado = [...historial]
@@ -98,7 +100,7 @@ export default function PlantDetailModal({
                 <span className={estadoSalud.color}>{estadoSalud.texto}</span>
               </span>
               <span className="px-3 py-1 bg-white/20 backdrop-blur-sm text-white text-xs font-semibold rounded-full">
-                {planta.tipo}
+                {t(`plantTypes.${planta.tipo}`)}
               </span>
             </div>
           </div>
@@ -118,7 +120,7 @@ export default function PlantDetailModal({
               }`}
             >
               <Droplet className="w-5 h-5" />
-              {diasRiego === 0 ? 'Water Now' : `Watered (${estadoRiego.texto})`}
+              {diasRiego === 0 ? t('plant.waterNow') : `${t('plant.watered')} (${estadoRiego.texto})`}
             </button>
             <button
               onClick={() => onEditar(planta)}
@@ -130,40 +132,42 @@ export default function PlantDetailModal({
 
           {/* Plant Info */}
           <div className="bg-gray-50 dark:bg-gray-900/50 rounded-2xl p-5 space-y-4">
-            <h3 className="font-bold text-gray-900 dark:text-white text-lg mb-4">Plant Information</h3>
+            <h3 className="font-bold text-gray-900 dark:text-white text-lg mb-4">
+              {t('plantInfo.information')}
+            </h3>
             
             {planta.ubicacion && (
-              <InfoRow icon={<MapPin />} label="Location" value={planta.ubicacion} />
+              <InfoRow icon={<MapPin />} label={t('plant.location')} value={planta.ubicacion} />
             )}
             <InfoRow 
               icon={<Droplet />} 
-              label="Watering" 
-              value={`Every ${planta.frecuenciaRiego} days`} 
+              label={t('plant.waterEveryDays')} 
+              value={t('plant.waterEvery', { days: planta.frecuenciaRiego })} 
             />
             <InfoRow 
               icon={<Calendar />} 
-              label="Acquired" 
+              label={t('plantInfo.acquired')} 
               value={new Date(planta.fechaAdquisicion).toLocaleDateString()} 
             />
             {planta.necesidadLuz && (
               <InfoRow 
                 icon={<Sun />} 
-                label="Light" 
-                value={planta.necesidadLuz.replace('-', ' ')} 
+                label={t('plantInfo.light')} 
+                value={t(`light.${planta.necesidadLuz.replace('-', '')}`)} 
               />
             )}
             {(planta.temperaturaMin || planta.temperaturaMax) && (
               <InfoRow 
                 icon={<Thermometer />} 
-                label="Temperature" 
+                label={t('plantInfo.temperature')} 
                 value={`${planta.temperaturaMin || '?'}°C - ${planta.temperaturaMax || '?'}°C`} 
               />
             )}
             {planta.humedad && (
               <InfoRow 
                 icon={<Wind />} 
-                label="Humidity" 
-                value={planta.humedad} 
+                label={t('plant.humidity')} 
+                value={t(`humidityLevels.${planta.humedad}`)} 
               />
             )}
           </div>
@@ -171,7 +175,9 @@ export default function PlantDetailModal({
           {/* Notes */}
           {planta.notas && (
             <div>
-              <h3 className="font-bold text-gray-900 dark:text-white text-lg mb-3">Notes</h3>
+              <h3 className="font-bold text-gray-900 dark:text-white text-lg mb-3">
+                {t('plant.notes')}
+              </h3>
               <p className="text-gray-600 dark:text-gray-400 leading-relaxed">
                 {planta.notas}
               </p>
@@ -181,13 +187,15 @@ export default function PlantDetailModal({
           {/* Care History */}
           <div>
             <div className="flex items-center justify-between mb-4">
-              <h3 className="font-bold text-gray-900 dark:text-white text-lg">Care History</h3>
+              <h3 className="font-bold text-gray-900 dark:text-white text-lg">
+                {t('plantInfo.careHistory')}
+              </h3>
               <button
                 onClick={() => setMostrarFormAccion(!mostrarFormAccion)}
                 className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm font-medium flex items-center gap-2 transition-all"
               >
                 <Plus className="w-4 h-4" />
-                Add Care Action
+                {t('plantInfo.addCareAction')}
               </button>
             </div>
 
@@ -200,6 +208,7 @@ export default function PlantDetailModal({
                   setMostrarFormAccion(false);
                 }}
                 onCancelar={() => setMostrarFormAccion(false)}
+                t={t}
               />
             )}
 
@@ -207,8 +216,8 @@ export default function PlantDetailModal({
             {historialOrdenado.length === 0 ? (
               <div className="text-center py-12 bg-gray-50 dark:bg-gray-900/50 rounded-2xl">
                 <Calendar className="w-12 h-12 mx-auto text-gray-400 mb-3" />
-                <p className="text-gray-500 dark:text-gray-400">No care history yet</p>
-                <p className="text-sm text-gray-400 dark:text-gray-500">Start tracking your plant care actions</p>
+                <p className="text-gray-500 dark:text-gray-400">{t('plantInfo.noCareHistory')}</p>
+                <p className="text-sm text-gray-400 dark:text-gray-500">{t('plantInfo.startTracking')}</p>
               </div>
             ) : (
               <div className="space-y-3">
@@ -218,6 +227,7 @@ export default function PlantDetailModal({
                     accion={accion}
                     isLast={index === historialOrdenado.length - 1}
                     onEliminar={onEliminarAccion}
+                    t={t}
                   />
                 ))}
               </div>
@@ -262,11 +272,13 @@ function InfoRow({ icon, label, value }: { icon: React.ReactNode; label: string;
 function TimelineItem({ 
   accion, 
   isLast, 
-  onEliminar 
+  onEliminar,
+  t
 }: { 
   accion: AccionCuidado; 
   isLast: boolean;
   onEliminar: (id: number) => void;
+  t: any;
 }) {
   return (
     <div className="relative flex gap-4 group">
@@ -285,10 +297,10 @@ function TimelineItem({
         <div className="flex items-start justify-between">
           <div className="flex-1">
             <p className="font-semibold text-gray-900 dark:text-white capitalize mb-1">
-              {accion.tipo.replace('-', ' ')}
+              {t(`careActions.${accion.tipo}`).replace(/[💧🌱✂️🪴💊☀️🔍]/g, '').trim()}
             </p>
             <p className="text-sm text-gray-500 dark:text-gray-400">
-              {formatearFecha(accion.fecha)}
+              {formatearFecha(accion.fecha, t)}
             </p>
             {accion.cantidad && (
               <p className="text-sm text-gray-600 dark:text-gray-300 mt-2">
@@ -303,7 +315,7 @@ function TimelineItem({
           </div>
           <button
             onClick={() => {
-              if (window.confirm('¿Eliminar esta acción del historial?')) {
+              if (window.confirm(t('careActions.deleteAction'))) {
                 onEliminar(accion.id);
               }
             }}
@@ -321,11 +333,13 @@ function TimelineItem({
 function FormAgregarAccion({
   plantaId,
   onAgregar,
-  onCancelar
+  onCancelar,
+  t
 }: {
   plantaId: number;
   onAgregar: (accion: Omit<AccionCuidado, 'id'>) => void;
   onCancelar: () => void;
+  t: any;
 }) {
   const [tipo, setTipo] = useState<TipoAccion>('riego');
   const [cantidad, setCantidad] = useState('');
@@ -345,44 +359,44 @@ function FormAgregarAccion({
     <div className="bg-blue-50 dark:bg-blue-900/20 border-2 border-blue-200 dark:border-blue-800 rounded-xl p-4 mb-4 space-y-3">
       <div>
         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-          Action Type
+          {t('careActions.actionType')}
         </label>
         <select
           value={tipo}
           onChange={(e) => setTipo(e.target.value as TipoAccion)}
           className="w-full px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none"
         >
-          <option value="riego">💧 Watered</option>
-          <option value="fertilizacion">🌱 Fertilized</option>
-          <option value="poda">✂️ Pruned</option>
-          <option value="trasplante">🪴 Repotted</option>
-          <option value="tratamiento">💊 Pest Control</option>
-          <option value="movimiento">☀️ Moved</option>
-          <option value="revision">🔍 Inspection</option>
+          <option value="riego">{t('careActions.watering')}</option>
+          <option value="fertilizacion">{t('careActions.fertilization')}</option>
+          <option value="poda">{t('careActions.pruning')}</option>
+          <option value="trasplante">{t('careActions.repotting')}</option>
+          <option value="tratamiento">{t('careActions.treatment')}</option>
+          <option value="movimiento">{t('careActions.movement')}</option>
+          <option value="revision">{t('careActions.inspection')}</option>
         </select>
       </div>
 
       <div>
         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-          Amount / Details (optional)
+          {t('careActions.amountDetails')}
         </label>
         <input
           type="text"
           value={cantidad}
           onChange={(e) => setCantidad(e.target.value)}
-          placeholder="e.g., 2 cups of water"
+          placeholder={t('careActions.amountPlaceholder')}
           className="w-full px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none"
         />
       </div>
 
       <div>
         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-          Notes (optional)
+          {t('careActions.notesOptional')}
         </label>
         <textarea
           value={notas}
           onChange={(e) => setNotas(e.target.value)}
-          placeholder="Any additional notes..."
+          placeholder={t('careActions.notesPlaceholder')}
           rows={2}
           className="w-full px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none resize-none"
         />
@@ -393,14 +407,14 @@ function FormAgregarAccion({
           onClick={onCancelar}
           className="flex-1 px-4 py-2 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg font-medium transition-all"
         >
-          Cancel
+          {t('actions.cancel')}
         </button>
         <button
           onClick={handleSubmit}
           className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-all flex items-center justify-center gap-2"
         >
           <Check className="w-4 h-4" />
-          Add Action
+          {t('actions.add')}
         </button>
       </div>
     </div>

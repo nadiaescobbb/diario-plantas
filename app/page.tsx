@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { 
   LayoutGrid, Sprout, Calendar, BookOpen, Settings, 
   Plus, Search, Sun, Moon, TrendingUp, AlertTriangle,
@@ -27,8 +28,11 @@ import CardPlanta from './components/CardPlanta';
 import PlantDetailModal from './components/PlantDetailModal';
 import ModalPlanta from './components/ModalPlanta';
 import VistaCalendario from './components/VistaCalendario';
+import LanguageSwitcher from './components/LanguageSwitcher';
 
 export default function PlantDiary() {
+  const { t } = useTranslation();
+  
   // Estados principales
   const [vistaActual, setVistaActual] = useState<Vista>('landing');
   const [plantas, setPlantas] = useState<Planta[]>([]);
@@ -135,7 +139,7 @@ export default function PlantDiary() {
   };
 
   const handleEliminar = (id: number) => {
-    if (window.confirm('Are you sure you want to delete this plant?')) {
+    if (window.confirm(t('plant.deleteConfirm'))) {
       setPlantas(plantas.filter(p => p.id !== id));
       setHistorial(historial.filter(h => h.plantaId !== id));
     }
@@ -206,7 +210,7 @@ export default function PlantDiary() {
       <div className="flex h-screen items-center justify-center bg-gray-50 dark:bg-gray-900">
         <div className="text-center">
           <Sprout className="w-16 h-16 mx-auto text-green-600 animate-pulse mb-4" />
-          <p className="text-gray-600 dark:text-gray-400">Loading...</p>
+          <p className="text-gray-600 dark:text-gray-400">{t('common.loading')}</p>
         </div>
       </div>
     );
@@ -231,8 +235,8 @@ export default function PlantDiary() {
             </div>
             {sidebarOpen && (
               <div>
-                <h1 className="font-bold text-lg">Plant Diary</h1>
-                <p className="text-xs text-white/70">v2.0 Pro</p>
+                <h1 className="font-bold text-lg">{t('app.title')}</h1>
+                <p className="text-xs text-white/70">{t('app.version')}</p>
               </div>
             )}
           </div>
@@ -242,35 +246,35 @@ export default function PlantDiary() {
         <nav className="flex-1 p-4 space-y-2">
           <NavItem 
             icon={<Home className="w-5 h-5" />}
-            label="Dashboard"
+            label={t('nav.dashboard')}
             active={vistaActual === 'dashboard'}
             onClick={() => setVistaActual('dashboard')}
             collapsed={!sidebarOpen}
           />
           <NavItem 
             icon={<LayoutGrid className="w-5 h-5" />}
-            label="My Plants"
+            label={t('nav.myPlants')}
             active={vistaActual === 'mis-plantas'}
             onClick={() => setVistaActual('mis-plantas')}
             collapsed={!sidebarOpen}
           />
           <NavItem 
             icon={<Calendar className="w-5 h-5" />}
-            label="Calendar"
+            label={t('nav.calendar')}
             active={vistaActual === 'calendario'}
             onClick={() => setVistaActual('calendario')}
             collapsed={!sidebarOpen}
           />
           <NavItem 
             icon={<BookOpen className="w-5 h-5" />}
-            label="Database"
+            label={t('nav.database')}
             active={vistaActual === 'base-datos'}
             onClick={() => setVistaActual('base-datos')}
             collapsed={!sidebarOpen}
           />
           <NavItem 
             icon={<Settings className="w-5 h-5" />}
-            label="Settings"
+            label={t('nav.settings')}
             active={vistaActual === 'configuracion'}
             onClick={() => setVistaActual('configuracion')}
             collapsed={!sidebarOpen}
@@ -282,10 +286,10 @@ export default function PlantDiary() {
           <button
             onClick={() => setSidebarOpen(!sidebarOpen)}
             className="w-full py-2 px-3 bg-white/10 hover:bg-white/20 rounded-lg transition-all flex items-center justify-center gap-2"
-            title={sidebarOpen ? "Collapse" : "Expand"}
+            title={sidebarOpen ? t('nav.collapse') : t('nav.expand')}
           >
             <Menu className="w-5 h-5" />
-            {sidebarOpen && <span className="text-sm">Collapse</span>}
+            {sidebarOpen && <span className="text-sm">{t('nav.collapse')}</span>}
           </button>
         </div>
       </aside>
@@ -297,16 +301,16 @@ export default function PlantDiary() {
           <div className="flex items-center justify-between">
             <div>
               <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
-                {vistaActual === 'dashboard' && 'Dashboard'}
-                {vistaActual === 'mis-plantas' && 'My Plants'}
-                {vistaActual === 'calendario' && 'Care Calendar'}
-                {vistaActual === 'base-datos' && 'Plant Database'}
-                {vistaActual === 'configuracion' && 'Settings'}
+                {vistaActual === 'dashboard' && t('nav.dashboard')}
+                {vistaActual === 'mis-plantas' && t('nav.myPlants')}
+                {vistaActual === 'calendario' && t('calendar.title')}
+                {vistaActual === 'base-datos' && t('database.title')}
+                {vistaActual === 'configuracion' && t('settings.title')}
               </h2>
               <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                {vistaActual === 'dashboard' && `Manage your ${plantas.length} plants`}
-                {vistaActual === 'mis-plantas' && `${plantasFiltradas.length} plants found`}
-                {vistaActual === 'calendario' && 'Upcoming care schedule'}
+                {vistaActual === 'dashboard' && `${plantas.length} ${t('stats.active').toLowerCase()}`}
+                {vistaActual === 'mis-plantas' && `${plantasFiltradas.length} ${t('stats.active').toLowerCase()}`}
+                {vistaActual === 'calendario' && t('calendar.title')}
               </p>
             </div>
 
@@ -319,17 +323,20 @@ export default function PlantDiary() {
                     type="text"
                     value={busqueda}
                     onChange={(e) => setBusqueda(e.target.value)}
-                    placeholder="Search plants..."
+                    placeholder={t('plant.searchPlaceholder')}
                     className="pl-10 pr-4 py-2 bg-gray-100 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-sm focus:ring-2 focus:ring-green-500 outline-none w-64 text-gray-900 dark:text-white"
                   />
                 </div>
               )}
 
+              {/* Language Switcher */}
+              <LanguageSwitcher />
+
               {/* Dark mode toggle */}
               <button
                 onClick={toggleDarkMode}
                 className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors text-gray-700 dark:text-gray-300"
-                title={darkMode ? "Light mode" : "Dark mode"}
+                title={darkMode ? t('common.lightMode') : t('common.darkMode')}
               >
                 {darkMode ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
               </button>
@@ -341,7 +348,7 @@ export default function PlantDiary() {
                   className="flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition-all shadow-lg shadow-green-500/30"
                 >
                   <Plus className="w-5 h-5" />
-                  <span className="hidden sm:inline">Add Plant</span>
+                  <span className="hidden sm:inline">{t('plant.addPlant')}</span>
                 </button>
               )}
             </div>
@@ -356,21 +363,21 @@ export default function PlantDiary() {
               {/* Stats Cards */}
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 <StatCard 
-                  title="Total Plants" 
+                  title={t('stats.totalPlants')} 
                   value={stats.total.toString()} 
-                  change="Active" 
+                  change={t('stats.active')} 
                   icon={<Sprout className="w-6 h-6" />} 
                   color="green" 
                 />
                 <StatCard 
-                  title="Needs Water" 
+                  title={t('stats.needsWater')} 
                   value={stats.necesitanRiego.toString()} 
-                  change="Today" 
+                  change={t('stats.today')} 
                   icon={<AlertTriangle className="w-6 h-6" />} 
                   color="red" 
                 />
                 <StatCard 
-                  title="Healthy" 
+                  title={t('stats.healthy')} 
                   value={stats.saludables.toString()} 
                   change={`${stats.porcentajeSaludables}%`} 
                   icon={<TrendingUp className="w-6 h-6" />} 
@@ -378,9 +385,9 @@ export default function PlantDiary() {
                   positive 
                 />
                 <StatCard 
-                  title="Needs Attention" 
+                  title={t('stats.needsAttention')} 
                   value={stats.necesitanAtencion.toString()} 
-                  change="Check now" 
+                  change={t('stats.checkNow')} 
                   icon={<AlertTriangle className="w-6 h-6" />} 
                   color="yellow" 
                 />
@@ -388,11 +395,11 @@ export default function PlantDiary() {
 
               {/* Plants Grid */}
               {plantas.length === 0 ? (
-                <EmptyState onAddPlant={() => handleAbrirModalEditar()} />
+                <EmptyState onAddPlant={() => handleAbrirModalEditar()} t={t} />
               ) : (
                 <div>
                   <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
-                    Your Plants
+                    {t('stats.yourPlants')}
                   </h3>
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                     {plantas.slice(0, 6).map(planta => (
@@ -412,7 +419,7 @@ export default function PlantDiary() {
                         onClick={() => setVistaActual('mis-plantas')}
                         className="px-6 py-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg font-medium transition-all"
                       >
-                        View All {plantas.length} Plants
+                        {t('stats.viewAll', { count: plantas.length })}
                       </button>
                     </div>
                   )}
@@ -428,10 +435,10 @@ export default function PlantDiary() {
                 <div className="text-center py-12">
                   <Search className="w-16 h-16 mx-auto text-gray-400 mb-4" />
                   <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
-                    No plants found
+                    {t('plant.noPlantsFound')}
                   </h3>
                   <p className="text-gray-600 dark:text-gray-400">
-                    Try adjusting your search
+                    {t('plant.adjustSearch')}
                   </p>
                 </div>
               ) : (
@@ -460,8 +467,8 @@ export default function PlantDiary() {
           {vistaActual === 'base-datos' && (
             <PlaceholderView 
               icon={<BookOpen className="w-16 h-16" />}
-              title="Plant Database"
-              subtitle="Coming soon: Browse plant care guides and disease information"
+              title={t('database.title')}
+              subtitle={t('database.comingSoon')}
             />
           )}
 
@@ -469,8 +476,8 @@ export default function PlantDiary() {
           {vistaActual === 'configuracion' && (
             <PlaceholderView 
               icon={<Settings className="w-16 h-16" />}
-              title="Settings"
-              subtitle="Coming soon: Customize your experience"
+              title={t('settings.title')}
+              subtitle={t('settings.comingSoon')}
             />
           )}
         </main>
@@ -554,22 +561,22 @@ function StatCard({ title, value, change, icon, color, positive }: any) {
   );
 }
 
-function EmptyState({ onAddPlant }: { onAddPlant: () => void }) {
+function EmptyState({ onAddPlant, t }: { onAddPlant: () => void; t: any }) {
   return (
     <div className="bg-white dark:bg-gray-800 rounded-2xl p-12 text-center border-2 border-dashed border-gray-300 dark:border-gray-700">
       <Sprout className="w-16 h-16 mx-auto text-gray-400 mb-4" />
       <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
-        No plants yet
+        {t('plant.noPlants')}
       </h3>
       <p className="text-gray-600 dark:text-gray-400 mb-6">
-        Add your first plant to get started
+        {t('plant.addFirstPlant')}
       </p>
       <button 
         onClick={onAddPlant}
         className="px-6 py-3 bg-green-600 hover:bg-green-700 text-white rounded-xl font-medium transition-all shadow-lg shadow-green-500/30"
       >
         <Plus className="w-5 h-5 inline mr-2" />
-        Add Your First Plant
+        {t('plant.addPlant')}
       </button>
     </div>
   );
