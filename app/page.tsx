@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { 
   LayoutGrid, Sprout, Calendar, BookOpen, Settings, 
   Plus, Search, Sun, Moon, TrendingUp, AlertTriangle,
-  Home, Menu, X
+  Home, Menu
 } from 'lucide-react';
 
 // Importar tipos y utilidades consolidadas
@@ -23,7 +23,7 @@ import {
 
 // Importar componentes
 import Landing from './components/Landing';
-import PlantCard from './components/CardPlanta';
+import CardPlanta from './components/CardPlanta';
 import PlantDetailModal from './components/PlantDetailModal';
 import ModalPlanta from './components/ModalPlanta';
 import VistaCalendario from './components/VistaCalendario';
@@ -77,7 +77,7 @@ export default function PlantDiary() {
 
   // Guardar plantas cuando cambien
   useEffect(() => {
-    if (!cargando) {
+    if (!cargando && plantas.length > 0) {
       guardarPlantas(plantas);
     }
   }, [plantas, cargando]);
@@ -98,38 +98,44 @@ export default function PlantDiary() {
 
   // Toggle dark mode
   const toggleDarkMode = () => {
-    setDarkMode(!darkMode);
-    localStorage.setItem('darkMode', String(!darkMode));
-    document.documentElement.classList.toggle('dark');
+    const newDarkMode = !darkMode;
+    setDarkMode(newDarkMode);
+    localStorage.setItem('darkMode', String(newDarkMode));
+    
+    if (newDarkMode) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
   };
 
   // Handlers de plantas
   const handleRegar = (id: number) => {
-    setPlantas(plantas.map(p => {
+    const plantasActualizadas = plantas.map(p => {
       if (p.id === id) {
-        const actualizada = { 
+        return { 
           ...p, 
           ultimoRiego: new Date().toISOString(),
           estadoSalud: 'healthy' as const
         };
-        
-        // Agregar al historial
-        const nuevaAccion: AccionCuidado = {
-          id: generarId(),
-          plantaId: id,
-          tipo: 'riego',
-          fecha: new Date().toISOString()
-        };
-        setHistorial([...historial, nuevaAccion]);
-        
-        return actualizada;
       }
       return p;
-    }));
+    });
+    
+    setPlantas(plantasActualizadas);
+    
+    // Agregar al historial
+    const nuevaAccion: AccionCuidado = {
+      id: generarId(),
+      plantaId: id,
+      tipo: 'riego',
+      fecha: new Date().toISOString()
+    };
+    setHistorial([...historial, nuevaAccion]);
   };
 
   const handleEliminar = (id: number) => {
-    if (window.confirm('¿Are you sure you want to delete this plant?')) {
+    if (window.confirm('Are you sure you want to delete this plant?')) {
       setPlantas(plantas.filter(p => p.id !== id));
       setHistorial(historial.filter(h => h.plantaId !== id));
     }
@@ -314,7 +320,7 @@ export default function PlantDiary() {
                     value={busqueda}
                     onChange={(e) => setBusqueda(e.target.value)}
                     placeholder="Search plants..."
-                    className="pl-10 pr-4 py-2 bg-gray-100 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-sm focus:ring-2 focus:ring-green-500 outline-none w-64"
+                    className="pl-10 pr-4 py-2 bg-gray-100 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-sm focus:ring-2 focus:ring-green-500 outline-none w-64 text-gray-900 dark:text-white"
                   />
                 </div>
               )}
@@ -322,7 +328,7 @@ export default function PlantDiary() {
               {/* Dark mode toggle */}
               <button
                 onClick={toggleDarkMode}
-                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors text-gray-700 dark:text-gray-300"
                 title={darkMode ? "Light mode" : "Dark mode"}
               >
                 {darkMode ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
@@ -390,7 +396,7 @@ export default function PlantDiary() {
                   </h3>
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                     {plantas.slice(0, 6).map(planta => (
-                      <PlantCard
+                      <CardPlanta
                         key={planta.id}
                         planta={planta}
                         onRegar={handleRegar}
@@ -431,7 +437,7 @@ export default function PlantDiary() {
               ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                   {plantasFiltradas.map(planta => (
-                    <PlantCard
+                    <CardPlanta
                       key={planta.id}
                       planta={planta}
                       onRegar={handleRegar}
@@ -482,6 +488,23 @@ export default function PlantDiary() {
         />
       )}
 
+      {mostrarModalDetalle && plantaSeleccionada && (
+        <PlantDetailModal
+          planta={plantaSeleccionada}
+          historial={historial}
+          onClose={() => {
+            setMostrarModalDetalle(false);
+            setPlantaSeleccionada(null);
+          }}
+          onRegar={handleRegar}
+          onAgregarAccion={handleAgregarAccion}
+          onEliminarAccion={handleEliminarAccion}
+          onEditar={(planta: Planta) => {
+            setMostrarModalDetalle(false);
+            handleAbrirModalEditar(planta);
+          }}
+        />
+      )}
     </div>
   );
 }
