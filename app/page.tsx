@@ -8,6 +8,7 @@ import {
   Home, Menu
 } from 'lucide-react';
 
+
 // Importar tipos y utilidades consolidadas
 import { Planta, AccionCuidado, Vista } from './lib/types';
 import { 
@@ -29,9 +30,33 @@ import PlantDetailModal from './components/PlantDetailModal';
 import ModalPlanta from './components/ModalPlanta';
 import VistaCalendario from './components/VistaCalendario';
 import LanguageSwitcher from './components/LanguageSwitcher';
+import I18nProvider from './components/I18nProvider';
+import ClientOnly from './components/ClientOnly';
+
+
 
 export default function PlantDiary() {
-  const { t } = useTranslation();
+  return (
+    <ClientOnly
+      fallback={
+        <div className="flex h-screen items-center justify-center bg-gray-50 dark:bg-gray-900">
+          <div className="text-center">
+            <div className="text-6xl mb-4">🌿</div>
+            <p className="text-gray-600 dark:text-gray-400">Loading...</p>
+          </div>
+        </div>
+      }
+    >
+      <I18nProvider>
+        {/* 🔽 Este componente va definido más abajo */}
+        <PlantDiaryContent />
+      </I18nProvider>
+    </ClientOnly>
+  );
+}
+
+function PlantDiaryContent() {
+  const { t, ready } = useTranslation(); 
   
   // Estados principales
   const [vistaActual, setVistaActual] = useState<Vista>('landing');
@@ -56,7 +81,6 @@ export default function PlantDiary() {
     const vistaGuardada = localStorage.getItem('vistaActual') as Vista;
     
     if (plantasGuardadas.length === 0) {
-      // Si no hay plantas, crear ejemplos
       const plantasConId = PLANTAS_EJEMPLO.map(p => ({
         ...p,
         id: generarId(),
@@ -78,6 +102,19 @@ export default function PlantDiary() {
     
     setCargando(false);
   }, []);
+
+
+  // verificación de 'ready'
+  if (cargando || !ready) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-gray-50 dark:bg-gray-900">
+        <div className="text-center">
+          <Sprout className="w-16 h-16 mx-auto text-green-600 animate-pulse mb-4" />
+          <p className="text-gray-600 dark:text-gray-400">Loading...</p>
+        </div>
+      </div>
+    );
+  }
 
   // Guardar plantas cuando cambien
   useEffect(() => {
@@ -591,3 +628,4 @@ function PlaceholderView({ icon, title, subtitle }: any) {
     </div>
   );
 }
+
